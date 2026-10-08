@@ -108,7 +108,7 @@ if len(references) == 1:
     refs AS (
       SELECT t.CONTENT_ID::VARCHAR AS TOPIC_CONTENT_ID,
              r.VALUE AS REF_VALUE,
-             TRY_TO_VARCHAR(r.VALUE:"ContentId") AS REF_PARENT_CONTENT_ID
+             r.VALUE:"ContentId"::VARCHAR AS REF_PARENT_CONTENT_ID
       FROM {topic} t,
            LATERAL FLATTEN(
              INPUT=>GET(t.CURATED_JSON,{quote_sql(parent_field)}),
