@@ -1,26 +1,18 @@
 # OSQL Project Strategy
 
-Public, copyable SQL, Python, and notebook snippets.
+Reference implementation and working examples for OSCAL-oriented data modeling,
+transformation, and validation.
 
-## Purpose
+## Contents
 
-This repository contains only sanitized code intended to be copied into a development
-environment or notebook.
+- SQL patterns
+- Python and Snowpark utilities
+- Notebook examples
+- OSCAL modeling and validation examples
 
-## Rules
+## Conventions
 
-- Use placeholder database, schema, table, warehouse, role, and connection names.
-- Use synthetic example identifiers and values.
-- Do not include organization, client, project-team, person, or environment-specific names.
-- Do not include production data, screenshots, internal run results, credentials, or secrets.
-- Keep files focused on the code needed to execute or test a specific task.
-
-## Folders
-
-Public artifacts may be added under:
-
-- `sql/`
-- `python/`
-- `notebooks/`
-
-Only reviewed, sanitized artifacts should be committed here.
+- Environment-specific object names are represented with generic placeholders.
+- Example identifiers and sample values are synthetic.
+- Environment-specific configuration is kept outside the examples.
+- Files are kept focused on a specific implementation or validation pattern.
