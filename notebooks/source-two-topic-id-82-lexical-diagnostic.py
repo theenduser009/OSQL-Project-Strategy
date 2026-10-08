@@ -27,8 +27,8 @@ if not re.fullmatch(
 database, schema, basename = source_table.split(".")
 if not basename.upper().endswith("_SOURCE_RAW"):
     raise RuntimeError("Unknown Source RAW naming contract.")
-entity = basename[:-len("_SOURCE_RAW")].split("_")[-1].upper()
-topic_name = basename[:-len("_SOURCE_RAW")] + "_" + entity + "_RAW"
+topic_name = basename[:-len("_SOURCE_RAW")] + "_TOPIC_RAW"
+entity = topic_name.removesuffix("_RAW").rsplit("_", 1)[-1].upper()
 topic_table = f"{database}.{schema}.{topic_name}"
 field = entity + "_ID"
 
