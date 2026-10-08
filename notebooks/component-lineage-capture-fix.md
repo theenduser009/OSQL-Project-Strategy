@@ -1,9 +1,17 @@
 # Component Lineage Capture Fix
 
-This notebook cell addresses reference-collection lineage where the collection itself
-is the mapped target and therefore has no scalar member target.
+## Permanent placement
 
-Run this cell after the mapper helper cell has been loaded and before rerunning PREVIEW.
+This function belongs in **Cell 4 — parsing / transform / payload helpers**.
+
+Replace the existing `_capture_contribution()` function in Cell 4. It should remain
+between `_oscal_prop()` and `_assign_mapped()`.
+
+It is **not** an eighth mapper cell.
+
+The standalone cell below can still be used as a temporary session override when Cell 4
+has already been executed. For future notebook runs, keep the corrected function directly
+inside Cell 4 so the fix is loaded normally with the seven-cell mapper.
 
 ```python
 def _capture_contribution(contributions, row, target, context, origin=None):
