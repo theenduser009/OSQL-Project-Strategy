@@ -232,4 +232,11 @@ print("SOURCE TWO CATALOG — INDEPENDENT READ-ONLY POST-COMMIT QA")
 print("Size checks = INFO (current counts only, not historical baselines).")
 print("Integrity/lineage checks: PASS / FAIL / BLOCKED.")
 print("Overall PASS does not certify all 15 mapped values or full OSCAL conformance.")
+# Snowpark .show() wraps SELECT SQL in a preview query. Keep the embedded
+# SQL free of a trailing statement terminator; Snowflake rejects it there.
+sql = sql.strip()
+if sql.endswith(";"):
+    sql = sql[:-1].rstrip()
+if ";" in sql:
+    raise RuntimeError("Unexpected internal statement delimiter in read-only QA SQL.")
 session.sql(sql).show(n=25, max_width=130)
