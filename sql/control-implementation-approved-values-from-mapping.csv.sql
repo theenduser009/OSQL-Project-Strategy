@@ -1,7 +1,10 @@
 -- SSP Control Implementation: approved source fields and stored OSCAL values.
 -- Read-only SQL. The mapping CSV is read at query time (no mapping inventory
 -- or environment identifiers are hard-coded in this public example).
--- Replace the four table-name placeholders and the CSV stage path.
+-- Replace the table placeholders, the stage/file path, and the named CSV format.
+-- Prerequisite: current approved mapping CSV accessible in a Snowflake stage.
+-- The named CSV format must support quoted commas (FIELD_OPTIONALLY_ENCLOSED_BY='"').
+-- The mapping is read, not published as a literal field inventory.
 -- The staged CSV is the approved source-field mapping input.
 --
 -- Output: original Archer field name, logical source table, OSCAL path,
@@ -14,18 +17,16 @@ SET SSP_DIM = '<CURATED_DB>.<SCHEMA>.<SSP_DIM_TABLE>';
 SET SSP_FACT = '<CURATED_DB>.<SCHEMA>.<SSP_FACT_TABLE>';
 SET PACKAGE_SOURCE = '<RAW_DB>.<SCHEMA>.<PACKAGE_SOURCE_TABLE>';
 SET CONTROL_SOURCE = '<RAW_DB>.<SCHEMA>.<CONTROL_DETAIL_SOURCE_TABLE>';
+SET SOURCE_SYSTEM = '<SOURCE_SYSTEM_NAME>';
+SET PACKAGE_SOURCE_BASENAME = '<PACKAGE_SOURCE_TABLE_BASENAME>';
 
 WITH approved_csv AS (
     SELECT
         TRIM(t.$1::STRING) AS ARCHER_SQL_FIELD,
         TRIM(t.$3::STRING) AS OSCAL_TARGET_PATH,
         TRIM(t.$15::STRING) AS ROLE_ID
-    FROM @<MAPPING_STAGE>/ARCHER_OSCAL_MAPPINGS.csv
-         (FILE_FORMAT => (
-             TYPE => 'CSV',
-             SKIP_HEADER => 1,
-             FIELD_OPTIONALLY_ENCLOSED_BY => '"'
-         )) t
+    FROM @<MAPPING_STAGE>/<MAPPING_CSV_FILENAME>
+         (FILE_FORMAT => '<DB>.<SCHEMA>.<EXISTING_QUOTED_CSV_FORMAT>') t
     WHERE TRIM(t.$2::STRING) = 'SSP - Control Implementation'
       AND UPPER(TRIM(t.$5::STRING)) = 'APPROVED'
 ),
@@ -67,6 +68,10 @@ values_found AS (
     WHERE sc.ELEMENT_TYPE = 'system-characteristics'
       AND p.ELEMENT_TYPE = 'props'
       AND sc.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+      AND sc.SOURCE_SYSTEM_NAME = $SOURCE_SYSTEM
+      AND sc.SOURCE_TABLE_NAME = $PACKAGE_SOURCE_BASENAME
+      AND p.SOURCE_SYSTEM_NAME = sc.SOURCE_SYSTEM_NAME
+      AND p.SOURCE_TABLE_NAME = sc.SOURCE_TABLE_NAME
 
     UNION ALL
 
@@ -85,6 +90,10 @@ values_found AS (
     WHERE md.ELEMENT_TYPE = 'metadata'
       AND rp.ELEMENT_TYPE = 'responsible-parties'
       AND md.SOURCE_RECORD_ID = rp.SOURCE_RECORD_ID
+      AND md.SOURCE_SYSTEM_NAME = $SOURCE_SYSTEM
+      AND md.SOURCE_TABLE_NAME = $PACKAGE_SOURCE_BASENAME
+      AND rp.SOURCE_SYSTEM_NAME = md.SOURCE_SYSTEM_NAME
+      AND rp.SOURCE_TABLE_NAME = md.SOURCE_TABLE_NAME
 
     UNION ALL
 
@@ -95,6 +104,8 @@ values_found AS (
     JOIN mapped m
       ON m.SOURCE_SCOPE = 'REQUIREMENT_MEMBER'
     WHERE req.ELEMENT_TYPE = 'implemented-requirements'
+      AND req.SOURCE_SYSTEM_NAME = $SOURCE_SYSTEM
+      AND req.SOURCE_TABLE_NAME = $PACKAGE_SOURCE_BASENAME
 ),
 ranked AS (
     SELECT v.*,
