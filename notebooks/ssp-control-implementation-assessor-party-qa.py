@@ -2,8 +2,14 @@
 # Run after the mapper with MODEL_GRAPHS and SOURCE_INPUTS in the same Snowflake
 # session. Derives all source fields, roles and target table bindings from the
 # currently compiled mapping. No changes to Snowflake data or schema.
+import uuid
 import json
 from collections import defaultdict
+
+# In reused notebook sessions, an earlier QA loop may assign a string named
+# 'uuid'. Restore the standard-library module in the mapper helper's own
+# global namespace before creating deterministic party UUIDs.
+_deterministic_uuid.__globals__["uuid"] = uuid
 
 OWNER_PATH = "system-security-plan.metadata.responsible-parties[]"
 MAPPING_GROUP = "SSP - Control Implementation"
