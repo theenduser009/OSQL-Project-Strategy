@@ -1,3 +1,7 @@
+-- 2026-10-08: For an already-loaded OSCAL Snowflake notebook, use the
+-- one-cell no-setup version instead: notebooks/control-implementation-values-no-setup.py
+-- The worksheet SQL below is optional and requires a staged mapping CSV.
+--
 -- SSP Control Implementation: approved source fields and stored OSCAL values.
 -- Read-only SQL. The mapping CSV is read at query time (no mapping inventory
 -- or environment identifiers are hard-coded in this public example).
