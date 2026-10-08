@@ -1,0 +1,1 @@
+# OSQL-Project-Strategy
