@@ -34,64 +34,133 @@ def literal(value):
 def fetch(sql):
     return [row.as_dict(recursive=True) for row in session.sql(sql).collect()]
 
-# Resolve ONLY the current database/schema, not every account namespace.
+# Use the existing Source Two profile if Cell 1 is loaded. Otherwise
+# try the current namespace, and if it is not the RAW namespace, locate one
+# unambiguous accessible four-level family alongside a Control Standard RAW.
+def raw_inventory(db, sc):
+    db_sql = identifier(db)
+    rows = fetch(
+        "SELECT TABLE_NAME FROM " + db_sql + ".INFORMATION_SCHEMA.TABLES " +
+        "WHERE TABLE_SCHEMA = " + literal(sc.upper()) +
+        " AND TABLE_NAME LIKE '%RAW' ORDER BY TABLE_NAME"
+    )
+    names = {str(row["TABLE_NAME"]).upper() for row in rows}
+    if any(not _SAFE.fullmatch(name) for name in names):
+        raise RuntimeError("Invalid RAW table name in metadata.")
+    return names
+
+def family_matches(names):
+    results = []
+    for name in sorted(names):
+        if not name.endswith("_SOURCE_RAW"):
+            continue
+        stem = name[:-len("_SOURCE_RAW")]
+        if not all(stem + suffix in names for suffix in (
+                "_TOPIC_RAW", "_SECTION_RAW", "_SUB_SECTION_RAW")):
+            continue
+        family_names = {stem + suffix for suffix in (
+            "_SOURCE_RAW", "_TOPIC_RAW", "_SECTION_RAW", "_SUB_SECTION_RAW")}
+        control_targets = [
+            candidate for candidate in sorted(names)
+            if candidate.endswith("_RAW") and "CONTROL_STANDARD" in candidate
+            and candidate not in family_names
+        ]
+        for target_name in control_targets:
+            results.append((stem, target_name))
+    return results
+
 current = fetch(
-    "SELECT CURRENT_DATABASE() AS ACTIVE_DB, "
+    "SELECT CURRENT_DATABASE() AS ACTIVE_DB, " +
     "CURRENT_SCHEMA() AS ACTIVE_SCHEMA"
 )
 if len(current) != 1:
-    raise RuntimeError("Could not identify the active database and schema.")
-database = current[0].get("ACTIVE_DB")
-schema = current[0].get("ACTIVE_SCHEMA")
-if not isinstance(database, str) or not isinstance(schema, str):
-    raise RuntimeError("Select a Source Two RAW database and schema.")
-db_sql, schema_sql = identifier(database), identifier(schema)
+    raise RuntimeError("Could not identify current Snowflake namespace.")
+current_db, current_schema = current[0].get("ACTIVE_DB"), current[0].get("ACTIVE_SCHEMA")
 
-table_list = fetch(
-    "SELECT TABLE_NAME FROM " + db_sql + ".INFORMATION_SCHEMA.TABLES "
-    "WHERE TABLE_SCHEMA = " + literal(schema.upper()) +
-    " AND TABLE_NAME LIKE '%RAW' ORDER BY TABLE_NAME"
-)
-tables = {str(row["TABLE_NAME"]).upper() for row in table_list}
-if not tables or not all(_SAFE.fullmatch(name) for name in tables):
-    raise RuntimeError("No safe RAW table inventory in current schema.")
+profiles = globals().get("SOURCE_FILES")
+profile = []
+if isinstance(profiles, (list, tuple)):
+    profile = [p for p in profiles if isinstance(p, dict)
+               and p.get("SOURCE_KEY") == "source-two-source"
+               and "CATALOG" in p.get("MODEL_BINDINGS", ())]
+if len(profile) > 1:
+    raise RuntimeError("Multiple Source Two Catalog profiles are ambiguous.")
+hints = []
+if profile:
+    raw = str(profile[0].get("RAW_TABLE") or "")
+    parts = raw.split(".")
+    if len(parts) != 3 or not all(_SAFE.fullmatch(p) for p in parts):
+        raise RuntimeError("Configured Source Two RAW table is invalid.")
+    hints.append((parts[0], parts[1]))
+if isinstance(current_db, str) and isinstance(current_schema, str) and (
+        _SAFE.fullmatch(current_db) and _SAFE.fullmatch(current_schema)):
+    current_ns = (current_db, current_schema)
+    if current_ns not in hints:
+        hints.append(current_ns)
 
-# The actual Source→Topic→Section→Sub-Section shape is established.
-# A Control Standards app is DIFFERENT from the Authoritative Source tree.
-families = []
-for name in sorted(tables):
-    if name.endswith("_SOURCE_RAW"):
-        stem = name[:-len("_SOURCE_RAW")]
-        if all(stem + suffix in tables for suffix in (
-            "_TOPIC_RAW", "_SECTION_RAW", "_SUB_SECTION_RAW"
-        )):
-            families.append(stem)
-if len(families) != 1:
-    print(json.dumps({"AUTHORITATIVE_SOURCE_FAMILY_CANDIDATES": families}))
+# A fresh notebook may point at PUBLIC or the wrong schema. Read metadata,
+# not business records, then prefer an exact single family/target pair.
+matches = []
+for db, sc in hints:
+    names = raw_inventory(db, sc)
+    matches.extend((db, sc, stem, target_name)
+                   for stem, target_name in family_matches(names))
+if not matches:
+    # Bounded, read-only account metadata fallback. SHOW returns only tables
+    # visible to the current role and does not create or alter any object.
+    try:
+        target_metadata = fetch(
+            "SHOW TERSE TABLES LIKE '%CONTROL_STANDARD%' IN ACCOUNT"
+        )
+    except Exception:
+        raise RuntimeError(
+            "The active namespace lacks the required Source Two RAW tables, "
+            "and account metadata discovery is unavailable. Select the Source "
+            "Two RAW database/schema and run only this cell."
+        ) from None
+    namespaces = set()
+    for entry in target_metadata:
+        name = str(entry.get("name") or entry.get("NAME") or "").upper()
+        db = str(entry.get("database_name") or entry.get("DATABASE_NAME") or "")
+        sc = str(entry.get("schema_name") or entry.get("SCHEMA_NAME") or "")
+        if name.endswith("_RAW") and "CONTROL_STANDARD" in name and all(
+                _SAFE.fullmatch(v) for v in (name, db, sc)):
+            namespaces.add((db, sc))
+    if len(namespaces) > 40:
+        raise RuntimeError(
+            "Too many Control Standard RAW namespaces to check safely."
+        )
+    for db, sc in sorted(namespaces):
+        if (db, sc) in hints:
+            continue
+        names = raw_inventory(db, sc)
+        matches.extend((db, sc, stem, target_name)
+                       for stem, target_name in family_matches(names))
+
+matches = sorted(set(matches))
+if len(matches) != 1:
+    print(json.dumps({
+        "CONTROL_STANDARD_RAW_CANDIDATES": [
+            {"DATABASE": db, "SCHEMA": sc, "TARGET": target_name}
+            for db, sc, stem, target_name in matches[:20]
+        ], "MATCH_COUNT": len(matches)}, indent=2))
     raise RuntimeError(
-        "Exactly one four-level Authoritative Sources RAW family is required "
-        "in the selected database/schema."
+        "Control Standards RAW namespace/target is missing or ambiguous. "
+        "No control ID linkage query has been run."
     )
-stem = families[0]
+database, schema, stem, target = matches[0]
+db_sql, schema_sql = identifier(database), identifier(schema)
 sources = (
     ("SOURCE", stem + "_SOURCE_RAW"),
     ("TOPIC", stem + "_TOPIC_RAW"),
     ("SECTION", stem + "_SECTION_RAW"),
     ("SUB_SECTION", stem + "_SUB_SECTION_RAW"),
 )
-
-# Target discovery is conservative: no guessed joins to Allocated Controls,
-# Policies or the already mapped authoritative source hierarchy.
-targets = sorted(name for name in tables
-                 if "CONTROL_STANDARD" in name
-                 and name not in {table for _, table in sources})
-print(json.dumps({"CONTROL_STANDARD_RAW_CANDIDATES": targets}, indent=2))
-if len(targets) != 1:
-    raise RuntimeError(
-        "Control Standards target RAW is missing or ambiguous. "
-        "Review the reported candidates; no control reference join was run."
-    )
-target = targets[0]
+print(json.dumps({
+    "CONTROL_STANDARD_RAW_CANDIDATES": [
+        {"DATABASE": database, "SCHEMA": schema, "TARGET": target}
+    ]
+}, indent=2))
 
 columns = fetch(
     "SELECT COLUMN_NAME, DATA_TYPE FROM " + db_sql +
