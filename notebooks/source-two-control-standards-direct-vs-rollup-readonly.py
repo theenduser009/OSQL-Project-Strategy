@@ -1,42 +1,113 @@
-# %% Source Two Control Standards: direct vs descendant-reference contract
-# Read-only: one new Python cell in the existing Source Two notebook.
-# Uses existing session, SOURCE_FILES and previously resolved hierarchy tables.
-# Does not build OSCAL controls; do not execute catalog registry or mapper writes.
+# %% Source Two Control Standards: direct versus descendant reference profile
+# Self-initializing, SELECT-only Snowflake notebook Python cell.
+# No dependence on previously executed hierarchy/mapper cells.
+# Never writes a registry entry, OSCAL node, or source/target row.
 
 import json
 import re
 
-if any(name not in globals() for name in ("session", "SOURCE_FILES", "topic", "section", "subsection")):
-    raise RuntimeError("Use the notebook with Source Two Cell 1 and prior hierarchy bindings.")
+_SAFE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
 
-profiles = [p for p in SOURCE_FILES
-            if p.get("SOURCE_KEY") == "source-two-source"
-            and "CATALOG" in p.get("MODEL_BINDINGS", ())]
-if len(profiles) != 1:
-    raise RuntimeError("Expected exactly one Source Two authoritative source profile.")
-
-safe_name = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
-
-def identifier(name):
-    parts = str(name).split(".")
-    if len(parts) != 3 or not all(safe_name.fullmatch(part) for part in parts):
-        raise ValueError("Unverified three-part Source Two RAW table identifier")
+def identifier(value):
+    parts = str(value).split(".")
+    if len(parts) != 3 or not all(_SAFE.fullmatch(x) for x in parts):
+        raise ValueError("Expected a safely named three-part RAW table")
     return tuple(parts)
 
-source_parts = identifier(profiles[0]["RAW_TABLE"])
-level_tables = [
-    ("SOURCE", source_parts),
-    ("TOPIC", identifier(topic)),
-    ("SECTION", identifier(section)),
-    ("SUB_SECTION", identifier(subsection)),
-]
-if any(parts[:2] != source_parts[:2] for _, parts in level_tables):
-    raise RuntimeError("The four Source Two levels must share one RAW namespace.")
-if len({parts for _, parts in level_tables}) != 4:
-    raise RuntimeError("Each Source Two hierarchy level requires a distinct table.")
+def literal(value):
+    return "'" + str(value).replace("'", "''") + "'"
 
 def quoted(parts):
     return ".".join('"' + part + '"' for part in parts)
+
+# A Snowflake notebook can lose Python variables when reopened or restarted.
+# Obtain the active Snowpark session directly if Cell 1 was not run.
+try:
+    _source_two_session = session
+except NameError:
+    _source_two_session = None
+if _source_two_session is None:
+    try:
+        from snowflake.snowpark.context import get_active_session
+        _source_two_session = get_active_session()
+    except Exception:
+        raise RuntimeError(
+            "No active Snowflake session. Open this cell in a connected Snowflake notebook."
+        ) from None
+if _source_two_session is None:
+    raise RuntimeError("No active Snowflake session is available.")
+session = _source_two_session
+
+# Prefer the current mapper's Source Two profile, but do not require it.
+_profiles = globals().get("SOURCE_FILES")
+_candidates = []
+if isinstance(_profiles, (tuple, list)):
+    _candidates = [p for p in _profiles
+                   if isinstance(p, dict)
+                   and p.get("SOURCE_KEY") == "source-two-source"
+                   and "CATALOG" in p.get("MODEL_BINDINGS", ())]
+if len(_candidates) > 1:
+    raise RuntimeError("Multiple Catalog Source Two profiles need review.")
+
+if len(_candidates) == 1:
+    source_parts = identifier(_candidates[0]["RAW_TABLE"])
+else:
+    # A fresh notebook needs no mapper variables or previous hierarchy query.
+    # Discover one unambiguous Source/Topic/Section/Sub-Section RAW family in
+    # the *current database and schema*, using INFORMATION_SCHEMA only.
+    _scope = session.sql(
+        "SELECT CURRENT_DATABASE() AS ACTIVE_DB, "
+        "CURRENT_SCHEMA() AS ACTIVE_SCHEMA"
+    ).collect()
+    if len(_scope) != 1:
+        raise RuntimeError("Could not resolve the current Snowflake namespace.")
+    _scope = _scope[0].as_dict(recursive=True)
+    _db, _schema = _scope.get("ACTIVE_DB"), _scope.get("ACTIVE_SCHEMA")
+    if not isinstance(_db, str) or not isinstance(_schema, str) or not (
+        _SAFE.fullmatch(_db) and _SAFE.fullmatch(_schema)
+    ):
+        raise RuntimeError(
+            "Select the Source Two RAW database/schema in the notebook context."
+        )
+    _table_rows = session.sql(
+        'SELECT TABLE_NAME FROM "' + _db + '".INFORMATION_SCHEMA.TABLES '
+        'WHERE TABLE_SCHEMA = ' + literal(_schema.upper())
+        + " AND TABLE_NAME LIKE '%RAW'"
+    ).collect()
+    _available = {
+        str(row.as_dict(recursive=True)["TABLE_NAME"]).upper()
+        for row in _table_rows
+    }
+    if not all(_SAFE.fullmatch(name) for name in _available):
+        raise RuntimeError("Unexpected source table name in metadata.")
+    _families = []
+    for _source in sorted(_available):
+        if not _source.endswith("_SOURCE_RAW"):
+            continue
+        _stem = _source[:-len("_SOURCE_RAW")]
+        if all(_stem + suffix in _available for suffix in (
+            "_TOPIC_RAW", "_SECTION_RAW", "_SUB_SECTION_RAW"
+        )):
+            _families.append(_source)
+    if len(_families) != 1:
+        raise RuntimeError(
+            "The current database/schema does not identify exactly one four-level "
+            "Source Two RAW family. Select that RAW namespace and run this cell again."
+        )
+    source_parts = (_db, _schema, _families[0])
+
+if not source_parts[2].upper().endswith("_SOURCE_RAW"):
+    raise RuntimeError("The Source Two source table needs a _SOURCE_RAW suffix.")
+_prefix = source_parts[2][:-len("_SOURCE_RAW")]
+level_tables = [
+    ("SOURCE", source_parts),
+    ("TOPIC", (*source_parts[:2], _prefix + "_TOPIC_RAW")),
+    ("SECTION", (*source_parts[:2], _prefix + "_SECTION_RAW")),
+    ("SUB_SECTION", (*source_parts[:2], _prefix + "_SUB_SECTION_RAW")),
+]
+if len({parts for _, parts in level_tables}) != 4:
+    raise RuntimeError("The four hierarchy RAW sources must be distinct.")
+
 
 # Explicit source fields from the reviewed Authoritative Sources worksheets.
 # ROLLUP is diagnostic only: never create duplicate native controls from it.
