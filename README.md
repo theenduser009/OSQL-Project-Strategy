@@ -1,13 +1,11 @@
-# OSCAL Workbench
+# OSCAL workbench — current runnable only
 
-This public repository intentionally contains **only the currently needed copy-and-run script**. Completed/retired QA scripts have been archived privately for recovery.
+The public repository is intentionally limited to one safe, current copy-and-run script. Earlier scripts and SQL remain archived in the private OSCAL repository.
 
-## Current task — Control Standards ID reconciliation
+## Current Source Two task: identify populated Control Standard ID and title fields
 
-Open [the current read-only Python cell](notebooks/source-two-control-standards-id-linkage-readonly.py) in a **connected Snowflake Python notebook**. Paste the complete script into one new cell and run **only that cell**.
+1. Open [the read-only Python cell](notebooks/source-two-control-standards-populated-id-title-readonly.py).
+2. Copy it into **one new Python cell** in your connected Snowflake notebook and run **only that cell**.
+3. Share the `CANDIDATE_COUNTS` output, particularly `FIELD_NAME`, `VALUE_TYPE`, `NONEMPTY_SCALAR_RECORDS`, and `DISTINCT_NONEMPTY_SCALAR_VALUES`.
 
-The script first tries the active database/schema and any existing source profile. If those don't identify the required RAW tables, it uses Snowflake's accessible table metadata to locate one unambiguous matching namespace. It will stop without making changes if discovery is unavailable or ambiguous.
-
-Share the `CONTROL_STANDARD_RAW_CANDIDATES`, `DIRECT_ID_MATCH_SUMMARY`, and `CONTROL_ID_TITLE_FIELD_CANDIDATES` output, or the candidates/error if it stops.
-
-**Safety:** This is inspection only, not a mapper PREVIEW, registry setup, or DIM/FACT load. Do not run retired setup SQL or enable COMMIT to investigate a lookup error.
+This checks *nonempty values*, not only whether the source JSON contains a field name. It does not update tables, load OSCAL controls, or issue registry changes.
