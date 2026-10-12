@@ -27,3 +27,5 @@ Run [the read-only CIA field coverage SQL](sql/ssp_security_impact_coverage_and_
 **Direct-native CIA migration preflight:** [read-only DIM/FACT fallback inventory](sql/ssp_cia_direct_native_migration_preflight_readonly.sql). Use this before attempting a migration from old fallback properties to the new direct native-member mapper. It uses exact DEV table names and performs no writes.
 
 **Next DEV check (2026-10-12):** [Classify direct-native CIA impact and check conflicting Archer labels](sql/ssp_cia_direct_native_impact_and_conflicts_readonly.sql). Run both read-only SELECTs. This estimates complete/partial/all-null source records and detects conflicting populated labels before any migration or COMMIT.
+
+**Obsolete CIA fallback dependency safety (2026-10-12):** [Run read-only FACT relationship audit](sql/ssp_cia_obsolete_fallback_dependency_safety_readonly.sql) before retiring the 91 old fallback property nodes. It checks incoming links, outgoing links, parent ownership and unsafe relationship counts. No DIM/FACT writes are performed; internal record-specific evidence stays in private OSCAL GitHub.
