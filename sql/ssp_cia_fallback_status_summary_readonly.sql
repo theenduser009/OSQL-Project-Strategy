@@ -1,0 +1,88 @@
+-- SSP CIA fallback vs source-field lineage: grouped DEV verification
+-- 2026-10-12 | READ ONLY | exact DEV database/schema/table names
+-- Run this after the detailed SSP CIA fallback comparison.
+-- No internal source-record IDs or client values are embedded in this file.
+-- Goal: confirm ALL field-level records are VALUE_MATCH and identify the
+-- exact counts of missing source-field lineage before considering a fix.
+
+WITH populated_source AS (
+    SELECT
+        a.CONTENT_ID::STRING AS SOURCE_RECORD_ID,
+        f.KEY::STRING AS ARCHER_FIELD,
+        REGEXP_REPLACE(LOWER(f.KEY::STRING), '[^a-z0-9]+', '-') AS FALLBACK_NAME,
+        CASE
+            WHEN IS_OBJECT(f.VALUE)
+                 AND ARRAY_SIZE(f.VALUE:ResolvedValues) = 1
+                 AND f.VALUE:ResolvedValues[0]:LookupStatus::STRING = 'MATCHED'
+                THEN TRIM(f.VALUE:ResolvedValues[0]:ValueName::STRING)
+            WHEN TYPEOF(f.VALUE) = 'VARCHAR'
+                THEN TRIM(f.VALUE::STRING)
+            ELSE NULL
+        END AS SOURCE_LABEL
+    FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW a,
+         LATERAL FLATTEN(INPUT => a.CURATED_JSON) f
+    WHERE f.KEY::STRING IN (
+        'RECOMMENDED_CONFIDENTIALITY_CONTROL_CATEGORY',
+        'CONFIDENTIALITY_CONTROL_CATEGORY_OVERRIDE',
+        'RECOMMENDED_INTEGRITY_CONTROL_CATEGORY',
+        'INTEGRITY_CONTROL_CATEGORY_OVERRIDE',
+        'RECOMMENDED_AVAILABILITY_CONTROL_CATEGORY',
+        'AVAILABILITY_CONTROL_CATEGORY_OVERRIDE',
+        'PROGRAMSITE_INTEGRITY_CONTROL_CATEGORY',
+        'PROGRAMSITE_AVAILABILITY_CONTROL_CATEGORY',
+        'CNSS_CONFIDENTIALITY_RATING',
+        'CNSS_INTEGRITY_RATING',
+        'CNSS_AVAILABILITY_RATING'
+    )
+      AND f.VALUE IS NOT NULL
+      AND NOT IS_NULL_VALUE(f.VALUE)
+),
+without_native AS (
+    SELECT p.*
+    FROM populated_source p
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT n
+        WHERE n.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+          AND LOWER(n.ELEMENT_TYPE) = 'security-impact-level'
+    )
+),
+compared AS (
+    SELECT
+        p.SOURCE_RECORD_ID,
+        p.ARCHER_FIELD,
+        CASE
+            WHEN fb.SOURCE_RECORD_ID IS NULL THEN 'FALLBACK_MISSING'
+            WHEN p.SOURCE_LABEL IS NULL THEN 'SOURCE_LABEL_NOT_RESOLVED'
+            WHEN fb.METADATA_JSON:"value"::STRING = p.SOURCE_LABEL
+                THEN 'VALUE_MATCH'
+            ELSE 'VALUE_MISMATCH'
+        END AS VALUE_CHECK,
+        CASE
+            WHEN lin.SOURCE_RECORD_ID IS NULL
+                THEN 'SOURCE_FIELD_LINEAGE_MISSING'
+            ELSE 'SOURCE_FIELD_LINEAGE_PRESENT'
+        END AS LINEAGE_CHECK
+    FROM without_native p
+    LEFT JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT fb
+        ON fb.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+       AND LOWER(fb.ELEMENT_TYPE) = 'props'
+       AND fb.METADATA_JSON:"name"::STRING = p.FALLBACK_NAME
+    LEFT JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT lin
+        ON lin.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+       AND LOWER(lin.ELEMENT_TYPE) = 'props'
+       AND lin.METADATA_JSON:"name"::STRING = 'source-field'
+       AND lin.METADATA_JSON:"value"::STRING = p.ARCHER_FIELD
+)
+SELECT
+    IFF(GROUPING(ARCHER_FIELD) = 1, 'ALL_FIELDS', ARCHER_FIELD) AS ARCHER_FIELD,
+    VALUE_CHECK,
+    LINEAGE_CHECK,
+    COUNT(*) AS FIELD_OCCURRENCES,
+    COUNT(DISTINCT SOURCE_RECORD_ID) AS SOURCE_RECORDS
+FROM compared
+GROUP BY GROUPING SETS (
+    (ARCHER_FIELD, VALUE_CHECK, LINEAGE_CHECK),
+    (VALUE_CHECK, LINEAGE_CHECK)
+)
+ORDER BY ARCHER_FIELD, VALUE_CHECK, LINEAGE_CHECK;
