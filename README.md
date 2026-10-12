@@ -15,3 +15,7 @@ This checks nonempty values; it does not update tables, load OSCAL controls or c
 Open [the read-only lineage SQL](sql/ssp_confidentiality_archer_lineage_readonly.sql) and run the SELECT statements directly in Snowflake DEV. The configured `RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT` table is named explicitly: **no placeholders or setup variables**.
 
 This checks whether the Archer field name `RECOMMENDED_CONFIDENTIALITY_CONTROL_CATEGORY` is stored as a separate `source-field` property and displays the confidentiality value for the same source record. **Live lineage presence has not yet been verified**; a record-level join does not uniquely attribute a value when multiple fields target one OSCAL objective.
+
+## SSP: CIA source-field population and lineage coverage
+
+Run [the read-only CIA field coverage SQL](sql/ssp_security_impact_coverage_and_lineage_readonly.sql) directly in Snowflake DEV. It includes the full configured database/schema/table identifiers, no placeholders, and two checks: approved CIA source fields versus nulls/stored lineage, and records with populated CIA source values but no native `security-impact-level` node. Record-specific values, findings, decisions, and checkpoints stay in the private OSCAL project. The published SQL was reviewed and committed, **not executed against Snowflake**.
