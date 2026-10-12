@@ -23,3 +23,5 @@ Run [the read-only CIA field coverage SQL](sql/ssp_security_impact_coverage_and_
 **Follow-up (2026-10-12):** [Check source labels, native-element omissions, fallback values, and explicit lineage per populated CIA field](sql/ssp_cia_fallback_value_lineage_check_readonly.sql). This query is read-only and includes no record-specific filter. Review `VALUE_CHECK` and `LINEAGE_CHECK`; do not interpret missing native elements alone as lost source data.
 
 **Latest validation (2026-10-12):** [Summarize SSP CIA fallback value matches and missing lineage by field and overall](sql/ssp_cia_fallback_status_summary_readonly.sql). Read-only Snowflake DEV SQL. Use the `ALL_FIELDS` summary to verify all returned rows, rather than inferring entire-result success from visible screenshot rows.
+
+**Direct-native CIA migration preflight:** [read-only DIM/FACT fallback inventory](sql/ssp_cia_direct_native_migration_preflight_readonly.sql). Use this before attempting a migration from old fallback properties to the new direct native-member mapper. It uses exact DEV table names and performs no writes.
