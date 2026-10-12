@@ -1,0 +1,75 @@
+-- SSP CIA fallback value and lineage check (READ ONLY)
+-- 2026-10-12: follow-up to the owner-provided DEV source/target results.
+-- Direct Snowflake DEV table names; no sample record IDs or actual source values
+-- are published. This SQL has not been executed by ChatGPT.
+-- Focus: populated Archer CIA fields when the native security-impact-level
+-- node is missing. Compare each surviving field with its named fallback prop
+-- and its separate 'source-field' lineage prop.
+
+WITH populated_source AS (
+    SELECT
+        a.CONTENT_ID::STRING AS SOURCE_RECORD_ID,
+        f.KEY::STRING AS ARCHER_FIELD,
+        REGEXP_REPLACE(LOWER(f.KEY::STRING), '[^a-z0-9]+', '-') AS FALLBACK_NAME,
+        CASE
+            WHEN IS_OBJECT(f.VALUE)
+                 AND ARRAY_SIZE(f.VALUE:ResolvedValues) = 1
+                 AND f.VALUE:ResolvedValues[0]:LookupStatus::STRING = 'MATCHED'
+                THEN TRIM(f.VALUE:ResolvedValues[0]:ValueName::STRING)
+            WHEN TYPEOF(f.VALUE) = 'VARCHAR' THEN TRIM(f.VALUE::STRING)
+            ELSE NULL
+        END AS SOURCE_LABEL
+    FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW a,
+         LATERAL FLATTEN(INPUT => a.CURATED_JSON) f
+    WHERE f.KEY::STRING IN (
+        'RECOMMENDED_CONFIDENTIALITY_CONTROL_CATEGORY',
+        'CONFIDENTIALITY_CONTROL_CATEGORY_OVERRIDE',
+        'RECOMMENDED_INTEGRITY_CONTROL_CATEGORY',
+        'INTEGRITY_CONTROL_CATEGORY_OVERRIDE',
+        'RECOMMENDED_AVAILABILITY_CONTROL_CATEGORY',
+        'AVAILABILITY_CONTROL_CATEGORY_OVERRIDE',
+        'PROGRAMSITE_INTEGRITY_CONTROL_CATEGORY',
+        'PROGRAMSITE_AVAILABILITY_CONTROL_CATEGORY',
+        'CNSS_CONFIDENTIALITY_RATING',
+        'CNSS_INTEGRITY_RATING',
+        'CNSS_AVAILABILITY_RATING'
+    )
+      AND f.VALUE IS NOT NULL
+      AND NOT IS_NULL_VALUE(f.VALUE)
+),
+without_native AS (
+    SELECT p.*
+    FROM populated_source p
+    LEFT JOIN (
+        SELECT DISTINCT SOURCE_RECORD_ID
+        FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT
+        WHERE LOWER(ELEMENT_TYPE) = 'security-impact-level'
+    ) n ON n.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+    WHERE n.SOURCE_RECORD_ID IS NULL
+)
+SELECT
+    p.SOURCE_RECORD_ID,
+    p.ARCHER_FIELD,
+    p.SOURCE_LABEL,
+    fb.METADATA_JSON:"value"::STRING AS FALLBACK_VALUE,
+    CASE
+        WHEN fb.SOURCE_RECORD_ID IS NULL THEN 'FALLBACK_MISSING'
+        WHEN p.SOURCE_LABEL IS NULL THEN 'SOURCE_LABEL_NOT_RESOLVED'
+        WHEN fb.METADATA_JSON:"value"::STRING = p.SOURCE_LABEL THEN 'VALUE_MATCH'
+        ELSE 'VALUE_MISMATCH'
+    END AS VALUE_CHECK,
+    CASE
+        WHEN lin.SOURCE_RECORD_ID IS NULL THEN 'SOURCE_FIELD_LINEAGE_MISSING'
+        ELSE 'SOURCE_FIELD_LINEAGE_PRESENT'
+    END AS LINEAGE_CHECK
+FROM without_native p
+LEFT JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT fb
+    ON fb.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+   AND LOWER(fb.ELEMENT_TYPE) = 'props'
+   AND fb.METADATA_JSON:"name"::STRING = p.FALLBACK_NAME
+LEFT JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT lin
+    ON lin.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+   AND LOWER(lin.ELEMENT_TYPE) = 'props'
+   AND lin.METADATA_JSON:"name"::STRING = 'source-field'
+   AND lin.METADATA_JSON:"value"::STRING = p.ARCHER_FIELD
+ORDER BY p.ARCHER_FIELD, p.SOURCE_RECORD_ID;
