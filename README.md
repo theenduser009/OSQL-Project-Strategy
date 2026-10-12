@@ -19,3 +19,5 @@ This checks whether the Archer field name `RECOMMENDED_CONFIDENTIALITY_CONTROL_C
 ## SSP: CIA source-field population and lineage coverage
 
 Run [the read-only CIA field coverage SQL](sql/ssp_security_impact_coverage_and_lineage_readonly.sql) directly in Snowflake DEV. It includes the full configured database/schema/table identifiers, no placeholders, and two checks: approved CIA source fields versus nulls/stored lineage, and records with populated CIA source values but no native `security-impact-level` node. Record-specific values, findings, decisions, and checkpoints stay in the private OSCAL project. The published SQL was reviewed and committed, **not executed against Snowflake**.
+
+**Follow-up (2026-10-12):** [Check source labels, native-element omissions, fallback values, and explicit lineage per populated CIA field](sql/ssp_cia_fallback_value_lineage_check_readonly.sql). This query is read-only and includes no record-specific filter. Review `VALUE_CHECK` and `LINEAGE_CHECK`; do not interpret missing native elements alone as lost source data.
