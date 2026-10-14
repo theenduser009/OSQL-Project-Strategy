@@ -1,20 +1,19 @@
-# OSCAL — public copy-and-run workbench
+# OSCAL public copy-and-run workbench
 
-**Purpose:** This public repository contains only the currently requested, minimal **read-only Snowflake runnable**. The project's code, mappings, QA evidence, decisions, and historical checkpoints belong in the separate OSCAL source-of-truth project and its restricted GitHub repository **once that repository's private visibility is verified**.
+**Current active step — October 14, 2026:** profile eight additional Authoritative Sources **Sub-Section scalar fields** in Snowflake DEV, as one read-only batch.
 
-## Run now — Source Two Sub-Section prose fields
+## Copy and run this one Python cell
 
-[Open the read-only Python cell](notebooks/source-two-subsection-two-parts-profile-readonly.py).
+[Open the current Source Two 8-field profiler](notebooks/source-two-subsection-next-eight-scalar-profile-readonly.py).
 
-Copy the **entire file** into **one new Python cell** in your connected Snowflake DEV notebook, then run only that cell. Send the aggregate `SOURCE_TWO_NEXT_SUBSECTION_PARTS_READ_ONLY_PROFILE` result back for review.
+Open that link, copy the **entire Python file**, paste into **one new Python cell** of your connected Snowflake DEV notebook, and run only the new cell. Send the aggregate lines labeled `SOURCE_TWO_SUBSECTION_NEXT_8_SCALARS_READ_ONLY_PROFILE` back for review.
 
-It profiles only `SUB_SECTION_DESCRIPTION` and `INFORMATION` in Authoritative Sources Sub-Section `CURATED_JSON`. It uses Snowflake table metadata to locate one unambiguous RAW table; if none or more than one is accessible, it stops without guessing. It does **not** run the seven-cell mapper, change registry entries, or write to DIM/FACT targets. These two mappings are **candidate only**, not committed.
+The script checks eight Source Two Sub-Section fields for missing/null values, text, numbers, timestamp text and resolved Archer selects. It discovers exactly one visible **DEV** RAW table and stops if the source scope is ambiguous. No credentials, private database/schema names, Archer record IDs, source payload values, or data samples are included or printed.
 
-## How we keep the public workbench clean
+The script does **not** execute mapper Cells 1–7, create tables, run registry SQL, change mappings, or perform DIM/FACT writes or COMMIT. The eight mapping proposals are **GitHub-tested in the restricted OSCAL source-of-truth repository**, not yet Snowflake-previewed or approved for COMMIT.
 
-- Exactly one current runnable is retained; old finished or paused SSP, Assessment Results, and Control Standard scripts were removed from the active branch on **2026-10-14**. They remain recoverable from Git history and can be republished **only when needed again**.
-- When the current runnable is completed, replace it with the **next approved copy-and-run task**, rather than accumulating scripts and duplicated guides.
-- **Never commit:** credentials, database namespace identifiers, business record IDs/values, source JSON/payloads, screenshots, account-specific results, full mapping workbooks, or confidential project checkpoints.
-- Deleting paths from this branch does **not** erase previous public Git history. Sensitive historical exposure, if any, must be assessed separately.
+## Repository boundaries
 
-**Workflow:** Review and maintain in the restricted project → publish sanitized single runnable here → copy/run in DEV → return aggregate results → record the verified checkpoint back in the restricted project → retire the public runnable.
+This public repo holds **only the current runnable and this short guide**. The previous two-field Sub-Section source profiler is complete and has been retired from the current branch; the historical file remains available through Git history. Keep all master mapping CSVs, regression tests, schema decisions, source records/screenshots, and full dated checkpoints in the **private OSCAL project repository**.
+
+After reviewing this run's aggregate results, the next approved runnable will replace this script. Do not accumulate completed scripts on public `main`.
