@@ -96,12 +96,40 @@ if not _valid_pairs:
         "Do not reuse the historical 52-row PREVIEW or rerun a prior COMMIT."
     )
 if len(_valid_pairs) > 1:
-    if (_valid_pairs[0][1] is not _valid_pairs[1][1]
-            or _valid_pairs[0][2] is not _valid_pairs[1][2]):
-        raise RuntimeError(
-            "NEXT_SIX_QA_AMBIGUOUS_PREVIEW_STATE: both valid preview "
-            "names refer to different objects. Review the latest candidate first."
+    # Normal Cell 7 and the one-cell runner may have independently built
+    # the SAME reviewed mapping. Object identity does not establish a change.
+    # Require equal mapping fingerprints, target-delta envelopes, and release
+    # scope before choosing the explicit Cell 7 result for independent RAW QA.
+    def _preview_scope_signature(item):
+        _, graphs, report = item
+        graph = graphs[_route]
+        group = report["groups"][0]
+        load = group["load"]
+        delta = load.get("expected_changes") or {}
+        return (
+            group.get("mapping_fingerprint"),
+            graph["context"]["compiled_plan"].get("mapping_fingerprint"),
+            load.get("release"), load.get("mode"), load.get("status"),
+            load.get("source_records"), load.get("nodes"), load.get("edges"),
+            load.get("lineage_gaps"),
+            *(tuple((delta.get(kind) or {}).get(key)
+                    for key in ("INSERTS", "UPDATES", "UNCHANGED"))
+              for kind in ("D", "F")),
         )
+
+    if _preview_scope_signature(_valid_pairs[0]) != _preview_scope_signature(_valid_pairs[1]):
+        raise RuntimeError(
+            "NEXT_SIX_QA_CONFLICTING_PREVIEW_SCOPES: mapping fingerprint, "
+            "release, or target delta differs. Do not select a preview by guess."
+        )
+    # The latest owner screenshot is from regular Cell 7. Selecting that
+    # specific candidate does not assert payload equality between previews:
+    # every chosen Sub-Section value is independently checked against RAW below.
+    _valid_pairs = [
+        pair for pair in _valid_pairs if pair[0] == "STANDARD_CELL_7"
+    ]
+    print("SIX_FIELD_QA_MULTIPLE_PREVIEWS: matching fingerprint and change "
+          "envelope; checking STANDARD_CELL_7 independently against RAW.")
 _qa_preview_source, _qa_graphs, _report = _valid_pairs[0]
 _groups = _report["groups"]
 print("SIX_FIELD_QA_PREVIEW_SOURCE:", _qa_preview_source)
