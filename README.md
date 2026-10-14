@@ -1,23 +1,25 @@
 # OSCAL public copy-and-run workbench
 
-**Current next step — 2026-10-14:** validate the **six newly mapped Source Two Authoritative Sources Sub-Section fields** against the original `CURATED_JSON` and the successful **no-target-DML** CATALOG DEV PREVIEW.
+**Current runnable, 2026-10-14:** corrected Source Two Sub-Section DIRECT `overview.prose` **DEV PREVIEW only**, no COMMIT.
 
-## Copy and run exactly ONE new Python cell
+## Required preparation in the existing Snowflake DEV notebook
 
-[**Open the current six-field original-source parity QA**](notebooks/source-two-subsection-next-six-exact-raw-parity-readonly.py)
+1. From the **PRIVATE** OSCAL repository regular metadata-boundary branch, open the [corrected 62-rule Source Two CSV](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/Mapping/release_candidates/2026-10-14-subsection-next-six-prose-direct/sources_source_runtime.csv). Download the exact file and replace the notebook File named `sources_source_runtime.csv`. Its 52 previously accepted rows are unchanged. Six new field candidates are enabled; four are deferred.
+2. From the **PRIVATE** reviewed isolated branch, replace the code in original notebook **Cell 3** with [current Cell 3 mapping compiler](https://github.com/theenduser009/Oscal-mapping-strategy/blob/work/source-two-subsection-prose-direct-fidelity-2026-10-14/notebooks/staging/source-two-topic-only-2026-10-13/03_canonical_mapping_contract.py); then replace **Cell 4** with [current Cell 4 payload helpers](https://github.com/theenduser009/Oscal-mapping-strategy/blob/work/source-two-subsection-prose-direct-fidelity-2026-10-14/notebooks/staging/source-two-topic-only-2026-10-13/04_parsing_transform_payload_helpers.py). **Run only these two updated Python cells, in order.** They define/compile code but do not load DIM/FACT targets. Keep the existing cached source and registry snapshot; do not rerun Cell 2.
+3. Copy the full [current public PREVIEW-only Python cell](notebooks/source-two-subsection-direct-prose-preview-only.py) into **one new Python cell** beneath the previously executed notebook. **Run only that NEW cell.** Its loader mode is hardcoded `PREVIEW`; no DIM/FACT target writes. The existing guarded PREVIEW may create/drop temporary tables.
 
-Copy the **entire Python file** into **one NEW Python cell** directly beneath the successful six-field CATALOG PREVIEW in `NB_ARCHER_OSCAL_MAPPER_V2`, **in the same active Snowflake DEV notebook session**. Run **only this new cell**. **Updated for regular Cell 7 notebooks:** it accepts EITHER `NEXT_SOURCE_TWO_CATALOG_GRAPHS` / `NEXT_SOURCE_TWO_CATALOG_REPORT` OR the regular `MODEL_GRAPHS` / `PIPELINE_REPORT`, but only after checking the exact six-field compiled mapping, matching fingerprint and no-write PREVIEW. A stale 52-row graph or two different valid-looking previews are rejected. **Do not rerun Cells 1–7, registry SQL, the source profiler or COMMIT.**
+**Do not rerun historical Cell 7** because its mode could still be `COMMIT`. Do not execute registry SQL, old accepted mapper cells, Source One scripts or a COMMIT.
 
-The QA compares original Archer Sub-Section `CURATED_JSON` values against the exact native `METADATA_JSON.parts[overview].prose` or `props[name].value` output for six newly enabled mappings. It checks all 20,000 original child Content IDs, exact target-parent Sub-Section grain, absent source values versus absent target values, duplicate props/parts, and exclusion of four deferred fields.
+## Why this PREVIEW changed
 
-**Output to send back:** `SOURCE_TWO_NEXT_6_INDEPENDENT_CURATED_JSON_FIELD_QA`, six per-field count summaries, `FIELD_MISMATCHES_TOTAL`, `RAW_DIRECT_PROSE_DIFFERENCES`, and `RESULT`.
+The earlier PREVIEW passed structural checks, but the independent original Archer `CURATED_JSON` QA found **1,085 Sub-Section descriptions with direct source prose differing from the stored candidate prose**. The generic scalar formatter stripped leading/trailing whitespace. The private staged mapper now supports opt-in `prose-direct` on the one new Sub-Section `overview.prose` mapping, preserving the original text exactly. The other five new fields and all existing Topic/Section mappings remain untouched.
 
-**Expected, but not yet verified live:** `PASS_EXACT_SIX_FIELD_SOURCE_PARITY`; 19,962 source descriptions; 0 mismatches and 0 direct-prose/raw differences. If the cell raises an exception or reports discrepancies, stop and share the aggregate error/status. Do not COMMIT or rerun accepted loads.
+The current PREVIEW runner supports either **52 accepted rows or a previously loaded 62-row six-field candidate** in memory, but verifies all 52 accepted rows remain identical, six new enabled/four deferred, exactly one Source Two CATALOG route, and no target DML. It should report `PREVIEW_RESULT: PASS_NO_TARGET_DML` with 33,679 DIM / 33,531 FACT, zero inserts and FACT updates. Actual DIM-update count is reported; old preview acceptance is superseded.
 
-The script is **read-only**: it does not invoke the mapper, registry SQL or a target loader, contains no client-specific database namespace, prints no business content or Content ID values, and does not modify DIM/FACT. Its focused tests passed 8/8 in private CI; broad CI continues to have historical failures.
+After the corrected PREVIEW passes, the next public runnable will be the updated *original Archer RAW versus native prose* field-value QA. No COMMIT is authorized yet. The original worksheet group-depth notation still requires mapping-owner confirmation.
 
-## Public/private file policy
+## Publication boundary
 
-The public main branch keeps this current runnable, README and a separately requested historical Change Control SQL. That SQL is unrelated to this Source Two QA and is left untouched. The finished PREVIEW-only script is retired from main, but recoverable through Git history. The 62-row mapping CSV, all underlying source metadata, screenshots, field decisions, tests, and dated checkpoints remain in the private OSCAL source-of-truth repository. **No client-specific mapping workbook or business data belongs in this public workbench.**
+This public repository hosts sanitized copy-and-run instructions only. Full mapping CSV, private helper code, tests, original payloads, reviews and dated checkpoints stay in the **private** OSCAL repository. The separate previously published `sql/change-control-dim-archer-trace.sql` is unrelated and remains untouched.
 
-Workflow: private design → sanitized public run cell → owner DEV validation → dated private checkpoint → retire public runnable when complete.
+GitHub history retains previous runnable versions even when retired from the current public worktree.
