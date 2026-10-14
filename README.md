@@ -1,33 +1,20 @@
-# OSCAL workbench — current read-only diagnostics
+# OSCAL — public copy-and-run workbench
 
-This public repository contains read-only diagnostic scripts. Earlier executable pipeline code and historical SQL remain in the private OSCAL repository. Do not publish credentials, actual source records or query-result payloads here.
+**Purpose:** This public repository contains only the currently requested, minimal **read-only Snowflake runnable**. The project's code, mappings, QA evidence, decisions, and historical checkpoints belong in the separate OSCAL source-of-truth project and its restricted GitHub repository **once that repository's private visibility is verified**.
 
-## Source Two: populated Control Standard ID and title fields
+## Run now — Source Two Sub-Section prose fields
 
-1. Open [the read-only Python cell](notebooks/source-two-control-standards-populated-id-title-readonly.py).
-2. Copy it into **one new Python cell** in your connected Snowflake notebook and run **only that cell**.
-3. Review `CANDIDATE_COUNTS`, particularly `FIELD_NAME`, `VALUE_TYPE`, `NONEMPTY_SCALAR_RECORDS`, and `DISTINCT_NONEMPTY_SCALAR_VALUES`.
+[Open the read-only Python cell](notebooks/source-two-subsection-two-parts-profile-readonly.py).
 
-This checks nonempty values; it does not update tables, load OSCAL controls or change the registry.
+Copy the **entire file** into **one new Python cell** in your connected Snowflake DEV notebook, then run only that cell. Send the aggregate `SOURCE_TWO_NEXT_SUBSECTION_PARTS_READ_ONLY_PROFILE` result back for review.
 
-## SSP: Archer confidentiality field lineage
+It profiles only `SUB_SECTION_DESCRIPTION` and `INFORMATION` in Authoritative Sources Sub-Section `CURATED_JSON`. It uses Snowflake table metadata to locate one unambiguous RAW table; if none or more than one is accessible, it stops without guessing. It does **not** run the seven-cell mapper, change registry entries, or write to DIM/FACT targets. These two mappings are **candidate only**, not committed.
 
-Open [the read-only lineage SQL](sql/ssp_confidentiality_archer_lineage_readonly.sql) and run the SELECT statements directly in Snowflake DEV. The configured `RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT` table is named explicitly: **no placeholders or setup variables**.
+## How we keep the public workbench clean
 
-This checks whether the Archer field name `RECOMMENDED_CONFIDENTIALITY_CONTROL_CATEGORY` is stored as a separate `source-field` property and displays the confidentiality value for the same source record. **Live lineage presence has not yet been verified**; a record-level join does not uniquely attribute a value when multiple fields target one OSCAL objective.
+- Exactly one current runnable is retained; old finished or paused SSP, Assessment Results, and Control Standard scripts were removed from the active branch on **2026-10-14**. They remain recoverable from Git history and can be republished **only when needed again**.
+- When the current runnable is completed, replace it with the **next approved copy-and-run task**, rather than accumulating scripts and duplicated guides.
+- **Never commit:** credentials, database namespace identifiers, business record IDs/values, source JSON/payloads, screenshots, account-specific results, full mapping workbooks, or confidential project checkpoints.
+- Deleting paths from this branch does **not** erase previous public Git history. Sensitive historical exposure, if any, must be assessed separately.
 
-## SSP: CIA source-field population and lineage coverage
-
-Run [the read-only CIA field coverage SQL](sql/ssp_security_impact_coverage_and_lineage_readonly.sql) directly in Snowflake DEV. It includes the full configured database/schema/table identifiers, no placeholders, and two checks: approved CIA source fields versus nulls/stored lineage, and records with populated CIA source values but no native `security-impact-level` node. Record-specific values, findings, decisions, and checkpoints stay in the private OSCAL project. The published SQL was reviewed and committed, **not executed against Snowflake**.
-
-**Follow-up (2026-10-12):** [Check source labels, native-element omissions, fallback values, and explicit lineage per populated CIA field](sql/ssp_cia_fallback_value_lineage_check_readonly.sql). This query is read-only and includes no record-specific filter. Review `VALUE_CHECK` and `LINEAGE_CHECK`; do not interpret missing native elements alone as lost source data.
-
-**Latest validation (2026-10-12):** [Summarize SSP CIA fallback value matches and missing lineage by field and overall](sql/ssp_cia_fallback_status_summary_readonly.sql). Read-only Snowflake DEV SQL. Use the `ALL_FIELDS` summary to verify all returned rows, rather than inferring entire-result success from visible screenshot rows.
-
-**Direct-native CIA migration preflight:** [read-only DIM/FACT fallback inventory](sql/ssp_cia_direct_native_migration_preflight_readonly.sql). Use this before attempting a migration from old fallback properties to the new direct native-member mapper. It uses exact DEV table names and performs no writes.
-
-**Next DEV check (2026-10-12):** [Classify direct-native CIA impact and check conflicting Archer labels](sql/ssp_cia_direct_native_impact_and_conflicts_readonly.sql). Run both read-only SELECTs. This estimates complete/partial/all-null source records and detects conflicting populated labels before any migration or COMMIT.
-
-**Obsolete CIA fallback dependency safety (2026-10-12):** [Run read-only FACT relationship audit](sql/ssp_cia_obsolete_fallback_dependency_safety_readonly.sql) before retiring the 91 old fallback property nodes. It checks incoming links, outgoing links, parent ownership and unsafe relationship counts. No DIM/FACT writes are performed; internal record-specific evidence stays in private OSCAL GitHub.
-
-**SSP source-to-target trace (2026-10-12):** [Read-only Archer CIA payload, archive filename (when present), picklist values, OSCAL native payload and source-field lineage](sql/ssp_cia_archer_to_oscal_trace_readonly.sql). Runs across all eleven mapped CIA fields with the actual DEV table names and no placeholders.
+**Workflow:** Review and maintain in the restricted project → publish sanitized single runnable here → copy/run in DEV → return aggregate results → record the verified checkpoint back in the restricted project → retire the public runnable.
