@@ -2,7 +2,8 @@
 # 2026-10-14. Copy into ONE new Python cell immediately after the successful
 # next-six PREVIEW cell, in the same Snowflake DEV notebook session.
 # Read-only. No registry, DML, target-write loader call or mapper rerun.
-# Requires the exact NEXT_SOURCE_TWO_CATALOG_* PREVIEW (not old MODEL_GRAPHS).
+# Accepts either standalone NEXT_* or Cell 7 MODEL_GRAPHS, only after
+# verifying this exact six-field compiled mapping and no-write PREVIEW.
 # Emits counts/statuses only: NO client payload text or Archer Content IDs.
 import json
 from collections import Counter
@@ -22,28 +23,79 @@ _deferred = {
     "INFORMATION", "SUBSECTION_CRITICALITY_VALUE",
     "SUB_SECTION_DATE_CREATED", "SUB_SECTION_LAST_UPDATED",
 }
+# The standalone guarded preview saves NEXT_* names. A normal Cell 7
+# PREVIEW saves the same graph under MODEL_GRAPHS / PIPELINE_REPORT instead.
+# Validate the actual compiled SIX-field mapping before accepting either.
+# Never alias an older accepted 52-row preview to the newer one blindly.
 _need = (
-    "NEXT_SOURCE_TWO_CATALOG_GRAPHS", "NEXT_SOURCE_TWO_CATALOG_REPORT",
-    "SOURCE_INPUTS", "MAPPING_INPUTS", "REGISTRY_INPUT_ROWS",
-    "_metadata_transform", "_oscal_property_values", "_to_python",
-    "resolve_json_path", "SKIP_VALUE", "_has_value",
+    "SOURCE_INPUTS", "_metadata_transform", "_oscal_property_values",
+    "_to_python", "resolve_json_path", "SKIP_VALUE", "_has_value",
 )
 _missing = [name for name in _need if name not in globals()]
 if _missing:
-    raise RuntimeError("NEXT_SIX_QA_REQUIRES_MATCHING_PREVIEW_STATE: " +
+    raise RuntimeError("NEXT_SIX_QA_REQUIRES_SOURCE_HELPERS: " +
                        ", ".join(_missing))
 
-_report = NEXT_SOURCE_TWO_CATALOG_REPORT
-_groups = _report.get("groups", []) if isinstance(_report, dict) else []
-if (not isinstance(_report, dict)
-        or _report.get("mode") != "PREVIEW"
-        or _report.get("status") != "PREVIEW_COMPLETE"
-        or _report.get("writes_executed") is not False
-        or _report.get("commit_attempted") is not False
-        or len(_groups) != 1
-        or (_groups[0].get("source"), _groups[0].get("model")) != _route
-        or _route not in NEXT_SOURCE_TWO_CATALOG_GRAPHS):
-    raise RuntimeError("NEXT_SIX_QA_WRONG_OR_STALE_PREVIEW_ROUTE")
+def _accepted_six_field_preview(graphs, report):
+    if (not isinstance(graphs, dict) or not isinstance(report, dict)
+            or report.get("mode") != "PREVIEW"
+            or report.get("status") != "PREVIEW_COMPLETE"
+            or report.get("writes_executed") is not False
+            or report.get("commit_attempted") is not False
+            or _route not in graphs):
+        return False
+    groups = report.get("groups", [])
+    if (not isinstance(groups, list) or len(groups) != 1
+            or (groups[0].get("source"), groups[0].get("model")) != _route):
+        return False
+    graph = graphs[_route]
+    if not isinstance(graph, dict) or not isinstance(graph.get("context"), dict):
+        return False
+    ctx = graph["context"]
+    rows = ctx.get("mapping_rows", [])
+    sub_rows = [r for r in rows if r.get("OWNER_ELEMENT_PATH") == _sub_path]
+    plan = ctx.get("compiled_plan") or {}
+    load = groups[0].get("load") or {}
+    return (
+        len(rows) == 48 and len(sub_rows) == 10
+        and _active.keys() <= {r.get("SOURCE_FIELD_NAME") for r in sub_rows}
+        and not (_deferred & {r.get("SOURCE_FIELD_NAME") for r in sub_rows})
+        and bool(plan.get("mapping_fingerprint"))
+        and plan.get("mapping_fingerprint") == groups[0].get("mapping_fingerprint")
+        and load.get("status") == "PREVIEW_PASSED_NO_TARGET_DML"
+        and load.get("writes_executed") is False
+        and load.get("committed") is False
+        and load.get("target_dml_attempted") is False
+    )
+
+_pair_options = (
+    ("NEXT_SIX_STANDALONE", globals().get("NEXT_SOURCE_TWO_CATALOG_GRAPHS"),
+     globals().get("NEXT_SOURCE_TWO_CATALOG_REPORT")),
+    ("STANDARD_CELL_7", globals().get("MODEL_GRAPHS"),
+     globals().get("PIPELINE_REPORT")),
+)
+_valid_pairs = [
+    (label, graphs, report)
+    for label, graphs, report in _pair_options
+    if _accepted_six_field_preview(graphs, report)
+]
+if not _valid_pairs:
+    raise RuntimeError(
+        "NEXT_SIX_QA_NO_MATCHING_SIX_FIELD_PREVIEW_FOUND: "
+        "expected a 48-rule CATALOG-only PREVIEW with the six new "
+        "Sub-Section fields and a matching compiled fingerprint. "
+        "Do not reuse the historical 52-row PREVIEW or rerun a prior COMMIT."
+    )
+if len(_valid_pairs) > 1:
+    if (_valid_pairs[0][1] is not _valid_pairs[1][1]
+            or _valid_pairs[0][2] is not _valid_pairs[1][2]):
+        raise RuntimeError(
+            "NEXT_SIX_QA_AMBIGUOUS_PREVIEW_STATE: both valid preview "
+            "names refer to different objects. Review the latest candidate first."
+        )
+_qa_preview_source, _qa_graphs, _report = _valid_pairs[0]
+_groups = _report["groups"]
+print("SIX_FIELD_QA_PREVIEW_SOURCE:", _qa_preview_source)
 
 _load = _groups[0].get("load", {})
 _delta = _load.get("expected_changes", {})
@@ -67,7 +119,7 @@ if (any(_load.get(key) is not False for key in
         or _f.get("UNCHANGED") != 33531):
     raise RuntimeError("NEXT_SIX_QA_PREVIEW_TARGET_DELTA_CHANGED")
 
-_graph = NEXT_SOURCE_TWO_CATALOG_GRAPHS[_route]
+_graph = _qa_graphs[_route]
 _ctx = _graph["context"]
 _rules = {r["SOURCE_FIELD_NAME"]: r for r in _ctx["mapping_rows"]
           if r["OWNER_ELEMENT_PATH"] == _sub_path}
@@ -149,11 +201,13 @@ for _n in _graph["nodes"].to_local_iterator():
             or _content_ids[0] in _nodes):
         raise RuntimeError("NEXT_SIX_QA_DUPLICATE_OR_MISSING_CONTENT_ID_PROP")
     _cid = _content_ids[0]
+    _orig_identity = _original[_cid].get("SUB_SECTION_ID")
     if (_n["PARENT_NODE_PATH"] != _section_path
             or _cid not in _original
             or _n["SOURCE_RECORD_ID"] != _joined_by_id[_cid][0]
-            or _n["INSTANCE_KEY"] !=
-               str(_original[_cid].get("SUB_SECTION_ID", ""))):
+            or not isinstance(_orig_identity, str)
+            or not _orig_identity.strip()
+            or _n["INSTANCE_KEY"] != _orig_identity.strip()):
         raise RuntimeError("NEXT_SIX_QA_SUBSECTION_OWNER_OR_ID_MISMATCH")
     _nodes[_cid] = (_props, _parts)
 
