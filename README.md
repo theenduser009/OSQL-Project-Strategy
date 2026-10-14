@@ -1,23 +1,38 @@
-# OSCAL — public copy-and-run workbench
+# OSCAL public copy-and-run workbench
 
-**Current step (October 14, 2026): independent original Archer RAW parity QA for the six new Source Two Sub-Section mappings.** The owner has already run the corrected `prose-direct` DEV PREVIEW; it passed with 33,679 DIM nodes / 33,531 FACT relationships, exactly 20,000 proposed DIM payload updates, zero inserts, zero FACT updates and **no target DML**.
+**Current step — October 14, 2026: one guarded Source Two six-field Sub-Section DEV COMMIT.**
 
-## Run exactly ONE new Python cell now
+**WARNING: The Python cell linked below intentionally WRITES to Snowflake DEV DIM/FACT targets. It is NOT a read-only diagnostic.** Run once only, after reviewing your targets and pausing other Catalog writers. It must not be retried blindly after any failure or unknown transaction outcome.
 
-[**Open current six-field exact original-RAW QA**](notebooks/source-two-subsection-next-six-exact-raw-parity-readonly.py).
+## Two steps, no old mapper/QA reruns
 
-Copy the **entire file** into a new Python cell directly under the successful corrected PREVIEW in your **same active Snowflake DEV notebook session**. Run **only this new cell**.
+**1. Install the matching revised Source Two Cell 6 loader** in your existing Snowflake DEV notebook, replacing the existing Cell 6 code, and **run that updated Cell 6 alone**:
 
-The script reads the current in-memory `NEXT_SOURCE_TWO_CATALOG_GRAPHS` / `NEXT_SOURCE_TWO_CATALOG_REPORT` pair from the standalone preview. It also supports regular Cell 7 `MODEL_GRAPHS` / `PIPELINE_REPORT` **only if** that pair contains the six new mappings with the required `prose-direct` transform and a matching compiled fingerprint. Historical `text`-transform Cell 7 candidates are rejected. If both corrected PREVIEW names exist with matching mapping fingerprints, loader releases and DIM/FACT change counts, the QA explicitly checks the regular `STANDARD_CELL_7` candidate against original RAW. Distinct Python objects alone no longer trigger a false error; conflicting mapping fingerprints or change counts still stop. The matching fingerprint does **not** prove their payloads are identical—the selected graph undergoes a full independent six-field source-value comparison.
+[Updated Cell 6 with fixed D/F delta guard](https://github.com/theenduser009/Oscal-mapping-strategy/blob/work/source-two-sixfield-dev-commit-guard-2026-10-14/notebooks/staging/source-two-topic-only-2026-10-13/06_validation_and_guarded_loader.py)
 
-It compares each of the six new mapping values to original retained Sub-Section `CURATED_JSON`, checks the original child Archer Content ID provenance, and verifies `parts[overview].prose` directly against the unchanged source text, **including surrounding whitespace**. It separately counts unpopulated values and confirms that four deferred fields are not materialized.
+This defines the loader; it does not execute the old Cell 7 or target DML. It adds an **opt-in** exact change envelope checked **before BEGIN TRANSACTION** and **again within the transaction before MERGE**. Existing target identity, graph ownership, baseline, rollback, orphan, audit, and post-COMMIT readback validation remain active.
 
-**Send back:** `SIX_FIELD_QA_PREVIEW_SOURCE`, the six field counters, `FIELD_MISMATCHES_TOTAL`, `RAW_DIRECT_PROSE_DIFFERENCES` and `RESULT`.
+**2. Copy/run only the current PUBLIC guarded COMMIT cell:**
 
-Successful live acceptance requires `RESULT: PASS_EXACT_SIX_FIELD_SOURCE_PARITY`, `FIELD_MISMATCHES_TOTAL: 0`, `RAW_DIRECT_PROSE_DIFFERENCES: 0`. These are **expected**, not yet live verified. If the cell raises an error, send its printed aggregate diagnostics. **Do not rerun prior Cells 1–7, registry SQL, PREVIEW or COMMIT.**
+[**Source Two — Six-field Guarded DEV COMMIT**](notebooks/source-two-subsection-sixfield-guarded-dev-commit.py)
 
-## Publication boundary
+Paste the entire script into **ONE new Python cell below your previously successful six-field RAW QA**, in the same Snowflake notebook session. Run it **once**, with the same Snowflake DEV role and approved target tables. It requires the existing `STANDARD_CELL_7` QA PASS and reuses the exact graph validated against 20,000 original Archer Sub-Sections. No old Cells 1–5, old Cell 7, Source One scripts, registry SQL, or raw reloading is required.
 
-This PUBLIC workbench contains sanitized current Python QA, this README and the previously provided **unrelated** `sql/change-control-dim-archer-trace.sql`, which was preserved. The earlier corrected PREVIEW runner was retired from public main, but remains recoverable through Git history. Full mapping CSVs, sensitive source details, tests and historical checkpoints should remain in the restricted OSCAL source of truth. GitHub repository visibility should be verified separately before assuming restricted access.
+The script hard-limits this batch to:
+- **DIM**: `INSERTS=0`, `UPDATES=20000`, `UNCHANGED=13679`
+- **FACT**: `INSERTS=0`, `UPDATES=0`, `UNCHANGED=33531`
+- **No retirement or deletion**; exact Source Two CATALOG DEV route only.
 
-No client namespace, source payload value, credentials or business record IDs are embedded in the QA code. No DIM/FACT writes or mapper execution are performed by this script.
+The revised loader refuses to write if the current target delta differs. It checks again inside its transaction. It automatically rolls back on a within-transaction mismatch before MERGE. It then verifies actual saved changes and reports `COMMITTED_AND_VERIFIED` and zero outstanding DIM/FACT inserts/updates.
+
+**Expected success output:** `SOURCE_TWO_SIXFIELD_DEV_COMMIT_RESULT` containing `status: COMMITTED_AND_VERIFIED`, `expected_changes` matching the fixed envelope and `verification.DIM / FACT` with zero pending changes; plus `RESULT: SOURCE_TWO_SIXFIELD_DEV_COMMITTED_AND_READBACK_VERIFIED`.
+
+**If any error appears: STOP, do not rerun the COMMIT cell.** Send only aggregate status/error (no business payload). The loader can report an unknown transaction outcome on transport failure; a blindly repeated attempt is prohibited.
+
+## Release-state boundary
+
+The six new mappings have passed a no-write PREVIEW and independent original Archer RAW value parity QA (20,000 children; field mismatches 0, direct prose differences 0). That QA **does not prove a physical COMMIT**; only the owner's new COMMIT + post-write readback can do so.
+
+The four other staged fields (INFORMATION, SUBSECTION_CRITICALITY_VALUE and two Sub-Section timestamp fields) remain deferred. Policies/Control Standards are separate mapping work, not part of this commit.
+
+The full 62-row mapping CSV and dated engineering decisions remain in the separate OSCAL source-of-truth repository. Do not put source payload values, sensitive metadata, or credentials in this PUBLIC workbench. The Source Two QA script was retired from public main after owner acceptance, but remains recoverable through Git history. The unrelated Change Control trace SQL remains untouched.
