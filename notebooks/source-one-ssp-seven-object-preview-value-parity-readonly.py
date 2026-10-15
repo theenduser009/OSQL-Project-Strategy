@@ -103,6 +103,26 @@ _stop(_ctx.get("config", {}).get("EXECUTE_WRITES") is False
       "CANDIDATE_CONTEXT_SCOPE")
 _stop(_plan.get("release") == "lean-csv-registry-v17-cia-null-lineage",
       "UNEXPECTED_MAPPER_RELEASE")
+# Actual Cell 3/4/5 parent identity rule, not a synthetic assumption:
+# system-characteristics is an OBJECT with one "singleton" instance per
+# source record; its property child has NO parent_instance_rule. Cell 4
+# emits PARENT_INSTANCE_KEY=None, and Cell 5 legitimately resolves that
+# child through the unique parent in this record and builds a real
+# CONTAINS FACT edge. The edge, not equality of two instance-key strings,
+# proves the stored parent-child relationship.
+_elements = _plan.get("elements") or {}
+_parent_spec = _elements.get(_PARENT, {})
+_props_spec = _elements.get(_OWNER, {})
+_parent_params = _parent_spec.get("parameters") or {}
+_props_params = _props_spec.get("parameters") or {}
+_stop(
+    _parent_spec.get("operator") == "object"
+    and _parent_params.get("registry_contract", {}).get("is_collection") is False
+    and _props_spec.get("operator") == "properties"
+    and _props_params.get("registry_contract", {}).get("parent_path") == _PARENT
+    and "parent_instance_rule" not in _props_params,
+    "UNEXPECTED_SINGLETON_PARENT_REGISTRY_CONTRACT",
+)
 _compiled = {
     r["SOURCE_FIELD_NAME"]: r
     for r in _ctx.get("mapping_rows", [])
@@ -231,9 +251,14 @@ for _n in _selected_prop.to_local_iterator():
     _stop(_key not in _props, "DUPLICATE_FIELD_ON_SAMPLED_RECORD")
     _props[_key] = _meta.get("value", _MISSING)
     _nodekey = str(_n["NODE_KEY"])
-    _stop(_n["PARENT_NODE_PATH"] == _PARENT
-          and str(_n["PARENT_INSTANCE_KEY"]) == _parent[_id][1],
-          "WRONG_PROPERTY_PARENT_INSTANCE")
+    _stop(
+        _n["PARENT_NODE_PATH"] == _PARENT
+        and _parent[_id][1] == "singleton"
+        and _n["PARENT_INSTANCE_KEY"] is None,
+        "WRONG_PROPERTY_PARENT_INSTANCE",
+    )
+    # The actual materialized FACT CONTAINS edge to this record's exact
+    # parent NODE_KEY is independently checked in the next section.
     _prop_keys[_nodekey] = _id
 
 # Verify each sampled property's unique real CONTAINS FACT edge and parent.
