@@ -2,6 +2,24 @@
 
 ## Seven-object PREVIEW value/FACT QA — current (October 15, 2026)
 
+**Corrected QA after singleton-parent false positive (October 15, 2026):**
+The owner's first QA run stopped with `WRONG_PROPERTY_PARENT_INSTANCE`.
+The previous QA erroneously equated a child's `PARENT_INSTANCE_KEY` with
+the parent's `INSTANCE_KEY`, which is not the actual SSP registry contract.
+The maintained mapper creates the one `system-characteristics` `object`
+parent with `INSTANCE_KEY="singleton"`, stores **NULL** for child
+`PARENT_INSTANCE_KEY`, and resolves correct ownership through the
+unique-parent `CONTAINS` FACT edge. The public QA file linked below was
+**replaced and read-back verified** in GitHub at commit
+`041dfcffdcb8e446b7ef68999287d65d0a392b13`, blob
+`8c9525533eb63a345383b75755ee6a76b6ca4d3c`. Its updated fixture
+and independent tests exercising REAL maintained Cells 3/4/5 passed
+**13/13** focused tests (overall broad CI retains 28 historic failures
+and 88 historic errors). **The mapper, approved mapping CSV and Snowflake
+PREVIEW have NOT been changed by the QA correction.** Use the CURRENT link,
+not the old copy from an earlier Snowflake cell. The corrected QA has not
+yet been executed in Snowflake.
+
 The owner-provided Snowflake DEV screenshot shows **Source One SSP PREVIEW COMPLETE**:
 2,813 source records; 879,640 candidate DIM nodes; 876,827 candidate FACT
 edges; **50,634 proposed DIM inserts and 50,634 FACT inserts**;
