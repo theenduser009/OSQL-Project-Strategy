@@ -1,6 +1,47 @@
 # OSCAL — public copy-and-run workbench
 
-## SSP seven OBJECT-valued properties — corrected PREVIEW (current 2026-10-15)
+## Seven-object PREVIEW value/FACT QA — current (October 15, 2026)
+
+The owner-provided Snowflake DEV screenshot shows **Source One SSP PREVIEW COMPLETE**:
+2,813 source records; 879,640 candidate DIM nodes; 876,827 candidate FACT
+edges; **50,634 proposed DIM inserts and 50,634 FACT inserts**;
+0 updates, 0 lineage gaps and **no target writes or COMMIT**.
+
+[**OPEN THIS ONE NEW PYTHON CELL — Source One SSP seven-object source-to-PREVIEW value/FACT QA**](notebooks/source-one-ssp-seven-object-preview-value-parity-readonly.py).
+
+**Copy the entire linked GitHub file and paste/run it as ONE NEW Python cell
+in the SAME successful Snowflake DEV notebook session. Do not rerun Cells 1–7,
+the earlier preview runner, registry SQL or COMMIT.**
+
+The cell checks both possible cached PREVIEW containers (standard Cell 7
+`MODEL_GRAPHS/PIPELINE_REPORT`, or the seven-field temporary overlay
+`SSP_OBJECT_PREVIEW_GRAPHS/SSP_OBJECT_PREVIEW_REPORT`) against the *exact*
+owner screenshot counts. It reports which preview ran and whether the
+currently staged Notebook Files CSV matches the authoritative GitHub file
+blob. Then it compares all seven Object-to-JSON-text properties for **up to 15
+same-source-record samples**, including omitted and explicit-null cases,
+and checks each sampled property node's actual one-parent FACT containment.
+All 2,813 source records are profiled for coverage. This is READ ONLY,
+prints only counts and field names, no Archer business values/Content IDs.
+
+**Return these lines:** `PREVIEW_VARIABLE_SOURCE`,
+`MAPPING_INPUT_SCOPE`, `NOTEBOOK_FILES_CSV_BLOB`,
+`SAMPLED_FIELD_VALUE_MISMATCHES`, each `FIELD_QA` line and `RESULT`.
+If stopped or mismatched, send that result; do **not** COMMIT.
+
+**Important:** The approved PREVIEW validates graph shape and prospective
+changes, not actual field-by-field value equality or a physical COMMIT.
+If the preview was temporary overlay, stage the reviewed updated 168-rule
+private CSV and repeat a file-loaded PREVIEW/value QA before authorizing
+any target write. The 50,634 proposed inserts may include other newly
+approved package fields; they are not proved to arise solely from the seven
+object fields.
+
+[Current project checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-15-source-one-ssp-object-preview-passed-50634-inserts-qa-next.md).
+
+---
+
+## Previous step — SSP seven OBJECT-valued properties corrected PREVIEW (completed)
 
 **First, open the [updated maintained Cell 3 (private OSCAL GitHub)](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/03_canonical_mapping_contract.py).** Copy its entire Python code into the existing Cell 3 of the already-open Snowflake DEV `NB_ARCHER_OSCAL_MAPPER_V2` notebook and execute **that Cell 3 only**. Do not rerun Cell 1, Cell 2, or the previous failed Cell 7. This refreshes the reusable null-preserving `json-text` compiler support in the current Python session; it does not read sources or write targets.
 
