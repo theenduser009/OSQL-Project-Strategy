@@ -1,27 +1,32 @@
 # OSCAL — public copy-and-run workbench
 
-**Current step, October 15, 2026:** Source Two Authoritative Sources — **next four Topic/Section Catalog property mappings, DEV PREVIEW ONLY**.
+**Current step: 2026-10-15.** Source Two Authoritative Sources — independent Archer CURATED_JSON → OSCAL native property QA for **four new Topic/Section fields**.
 
-## First: replace the notebook CSV (no execution)
+## One new Python cell — run now
 
-Download the [**private 67-row mapping review candidate**](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/Mapping/release_candidates/2026-10-15-topic-section-next-four/sources_source_runtime.csv) from the regular metadata-boundary branch. Use **Raw / Download** and replace the Snowflake Notebook Files entry named `sources_source_runtime.csv`. This file retains the prior **62 mapped-review rows exactly unchanged**, stages four new optional Topic/Section group properties and defers Section `INFORMATION`, which was null in all 10,566 records. The rolled-up Section criticality sum remains **diagnostic only** and is not activated.
+[**Open current Source Two four-field RAW parity QA**](notebooks/source-two-topic-section-next-four-raw-parity-readonly.py).
 
-**Do not rerun original Cells 1–7, registry setup, the last six-field Sub-Section COMMIT or the completed profile.** The previously accepted 62 mapping rows must remain loaded in the existing notebook Python session for the preflight comparison.
+Copy **the entire Python file** into **one new Python cell directly after the successful Topic/Section PREVIEW in the same active Snowflake DEV notebook session**. Run **only the new QA cell**. The previously executed preview variables must still exist as `NEXT_TOPIC_SECTION_GRAPHS` and `NEXT_TOPIC_SECTION_REPORT`.
 
-## Second: copy this one current PUBLIC Python runner
+**Do not rerun earlier Cells 1–7, registry SQL, source profiling, the successful PREVIEW, or any COMMIT.** No need to change the already uploaded 67-row mapping candidate.
 
-[**Open the next four Topic/Section no-write PREVIEW cell**](notebooks/source-two-topic-section-next-four-preview-only.py).
+The QA independently matches **1,416 original Topic Content IDs and 10,566 original Section Content IDs** to their respective PREVIEW group elements using the embedded `archer-content-id` provenance property; it checks each exact destination value:
 
-Copy the entire Python file into one **NEW Python cell** in the same active Snowflake DEV notebook session and run **only the new cell**. The runner compiles the private candidate against the cached Source Two snapshot and hardcodes the execution as `PREVIEW` even if historic `OSCAL_LOAD_MODE` is `COMMIT`.
+- Topic `DOCUMENT_NUMBER` → `catalog.groups[].props[name=document-number].value`, verifying **13 populated text** and **1,403 omitted JSON-null** records.
+- Topic `TOTAL_NUMBER_OF_SECTIONS` → `catalog.groups[].props[name=section-count].value`.
+- Section `SECTION_SHORT_DESCRIPTION` → `catalog.groups[].groups[].props[name=short-description].value`.
+- Section `TOTAL_NUMBER_OF_SUB_SECTIONS` → `catalog.groups[].groups[].props[name=sub-section-count].value`.
 
-The previous source profile reported 1,416 Topics and 10,566 Sections. `TOTAL_NUMBER_OF_SECTIONS` and `TOTAL_NUMBER_OF_SUB_SECTIONS` were numeric; `SECTION_SHORT_DESCRIPTION` was source text with 1,965 HTML-like values. The photo clipped the far-right type decision for `DOCUMENT_NUMBER`, so the new runner checks its actual 1,416 cached values: **1,403 JSON NULL and exactly 13 nonblank strings** before compiling or previewing. Anything else **stops without target DML**.
+It confirms the approved Sub-Section and graph scope remained unchanged (33,679 DIM, 33,531 FACT; **11,982 proposed Topic/Section DIM updates; zero new inserts/FACT changes**), checks correct Source→Topic→Section ownership and that deferred Section `INFORMATION` was not emitted. It outputs only counts, not original payload text or record IDs.
 
-**Expected PREVIEW envelope (subject to actual DEV readback):** 33,679 DIM / 33,531 FACT graph identities, **0 DIM/FACT inserts**, **11,982 DIM payload updates** across Topic+Section groups, **0 FACT updates** and 21,697 unchanged DIM. No physical target writes or COMMIT. The remaining four field/source-to-exact-property value checks and owner approval of clipped source worksheet paths are separate gates after PREVIEW.
+**Output to return:** `SOURCE_TWO_NEXT_FOUR_TOPIC_SECTION_ORIGINAL_RAW_FIELD_QA`, four per-field counts, `FIELD_MISMATCHES_TOTAL`, `RAW_TEXT_SPACING_DIFFERENCES_DIAGNOSTIC`, `RESULT`.
 
-Output begins `SOURCE_TWO_NEXT_FOUR_TOPIC_SECTION_CATALOG_PREVIEW` and should end `RESULT: PREVIEW_PASSED_NO_TARGET_DML; NEW_FOUR_FIELD_QA_PENDING`. If it says `SOURCE_TWO_TOPIC_SECTION_PREVIEW_BLOCKED_...` send the exact error; do not rerun old COMMIT cells.
+A successful transformed-value comparison ends `RESULT: PASS_FOUR_FIELD_SOURCE_TO_TRANSFORMED_TARGET_PARITY` and `FIELD_MISMATCHES_TOTAL: 0`. The script separately reports source-to-stored spacing differences for the two text properties; those require an informed source-owner disposition if nonzero. **Source-value QA and owner target-path acceptance are not the same as a target COMMIT.**
+
+**Read-only:** no SQL, target writes, mapper reruns, registry edits or COMMIT. If it prints an error, stop and share the aggregate output/traceback; don't rerun COMMIT.
 
 ## Repository boundaries
 
-This public workbench holds only the current sanitized Python runnable, README, and previously requested unrelated `sql/change-control-dim-archer-trace.sql`. The completed Topic/Section source profiler was retired from the current worktree; it remains recoverable in Git history. Full CSVs, mapping decisions, tests, and client details stay in the PRIVATE OSCAL project repo.
+Full mapping CSVs, test fixtures, checkpoints, and all project decisions are maintained in the OSCAL source-of-truth project. [67-row review candidate](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/Mapping/release_candidates/2026-10-15-topic-section-next-four/sources_source_runtime.csv). Verify that repository's actual GitHub visibility before adding confidential content.
 
-**No DIM/FACT source writes or COMMIT are performed by this PREVIEW.**
+Only this current QA runner supersedes the old four-field PREVIEW runner. **Other Source One Python/SQL artifacts and the existing Change Control SQL in this public repo were preserved untouched**, because their completion/disposition is not part of this request. Removed completed runners remain recoverable from Git history.
