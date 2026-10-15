@@ -1,6 +1,22 @@
 # OSCAL — public copy-and-run workbench
 
-## SSP 168-rule scalar shape diagnostic — current (2026-10-15)
+## SSP seven OBJECT-valued properties — corrected PREVIEW (current 2026-10-15)
+
+**First, open the [updated maintained Cell 3 (private OSCAL GitHub)](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/03_canonical_mapping_contract.py).** Copy its entire Python code into the existing Cell 3 of the already-open Snowflake DEV `NB_ARCHER_OSCAL_MAPPER_V2` notebook and execute **that Cell 3 only**. Do not rerun Cell 1, Cell 2, or the previous failed Cell 7. This refreshes the reusable null-preserving `json-text` compiler support in the current Python session; it does not read sources or write targets.
+
+**Second, open [Source One SSP 168-row seven-object PREVIEW-only runner](notebooks/source-one-168-object-props-preview-only.py).** Copy the complete file into **one NEW Python cell in the SAME notebook session** and execute once. It reuses frozen Source One inputs, checks the owner's previous exact mapping fingerprint and the seven original `direct` rules, builds a temporary **in-memory** seven-rule `json-text` overlay, recompiles the SSP metadata, and requests exactly **one PREVIEW** with writes disabled. It does not reload raw data, replace the notebook's uploaded CSV, run the registry SQL, or COMMIT.
+
+The corrected **authoritative** CSV is already saved privately on `simplify-metadata-boundary`, **168 mapping records**. It includes the new `json-text` transforms and keeps `NULL_POLICY=preserve` for seven populated OBJECT-shaped Archer fields. All 50 Control Implementation mappings remain APPROVED, and the five Source One and native requirement/assessor behavior outside the seven edits is unchanged.
+
+**Report only:** `SOURCE_ONE_SSP_168_OBJECT_JSON_TEXT_PREVIEW_ONLY`, `CANDIDATE_MAPPING_FINGERPRINT`, `PREVIEW_STATUS`, `EXPECTED_CHANGES`, and `RESULT` (or any STOP/error). No source values/Content IDs needed.
+
+**Do not COMMIT.** This is a no-write *candidate overlay* PREVIEW to isolate the corrected transforms. Before later COMMIT, the reviewed authoritative CSV must actually be staged in Notebook Files and an exact file-loaded DEV PREVIEW/source-value QA accepted. The source's earlier value-based identity/obsolete-row guard is still active. A successful GitHub code test is not a Snowflake acceptance run.
+
+[Previous 168-row scalar-shape diagnostic (owner ran: seven OBJECT fields, 17,727 shape errors)](notebooks/source-one-ssp-scalar-shape-readonly.py).
+
+---
+
+## Earlier SSP scalar shape diagnostic — completed (2026-10-15)
 
 [**OPEN: Source One SSP scalar-property shape diagnostic — COPY/PASTE/RUN**](notebooks/source-one-ssp-scalar-shape-readonly.py)
 
