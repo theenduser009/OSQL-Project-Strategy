@@ -1,3 +1,7 @@
+# REVIEW CORRECTION 2026-10-15: status.state belongs to a separate
+# SSP DIM element (status), not inside system-characteristics METADATA_JSON.
+# For OPERATIONAL_STATUS=Decommissioned, expected status.state is 'disposition'.
+# This read-only check displays ACTUAL stored values; it does not assert them.
 # SOURCE ONE — ONE CONTENT ID: ACTUAL CURATED_JSON VS ACTUAL OSCAL DIM
 # 2026-10-15 | Public copy-and-run code, read-only. NO SQL writes/COMMIT.
 # Paste the complete file into ONE NEW Python cell in the active Snowflake notebook.
@@ -110,7 +114,7 @@ for model in ("SSP", "ASSESSMENT_RESULTS", "POAM"):
          AND d.SOURCE_SYSTEM_NAME = 'ARCHER'
          AND d.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
          AND d.ELEMENT_TYPE IN ('props','system-characteristics','metadata',
-                  'responsible-parties','parties','poam-items','results')
+                  'responsible-parties','parties','poam-items','results','status')
     """
     try:
         data[model] = [(str(r["KIND"]), str(r["PARENT_KIND"] or ""),
@@ -155,14 +159,19 @@ def _oscal_value(row):
         matches = [payload for kind, parent_kind, payload in items
                    if kind == "poam-items" and parent_kind == "plan-of-action-and-milestones"]
     else:
-        if ".system-characteristics." in path:
+        # Status has its own DIM element. It is not nested in the
+        # system-characteristics node's METADATA_JSON.
+        if ".system-characteristics.status." in path:
+            kind, parts = "status", path.split(".system-characteristics.status.",1)[1]
+        elif ".system-characteristics." in path:
             kind, parts = "system-characteristics", path.split(".system-characteristics.",1)[1]
         elif ".metadata." in path:
             kind, parts = "metadata", path.split(".metadata.",1)[1]
         else:
             return "(UNSUPPORTED OSCAL PATH)"
         for item_kind, parent_kind, payload in items:
-            if item_kind == kind and isinstance(payload, dict):
+            if (item_kind == kind and isinstance(payload, dict)
+                    and (kind != "status" or parent_kind == "system-characteristics")):
                 value = _read_path(payload, parts.split("."))
                 if value is not _NO_VALUE:
                     matches.append(value)
