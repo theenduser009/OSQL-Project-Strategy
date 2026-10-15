@@ -1,25 +1,27 @@
-# OSCAL public copy-and-run workbench
+# OSCAL — public copy-and-run workbench
 
-**Current step — October 15, 2026:** one read-only source inventory for the **next Topic and Section Catalog mapping batch**. The last six-field Sub-Section batch already returned `COMMITTED_AND_VERIFIED` in owner Snowflake DEV; **do not run the older guarded COMMIT cell again**.
+**Current step, October 15, 2026:** Source Two Authoritative Sources — **next four Topic/Section Catalog property mappings, DEV PREVIEW ONLY**.
 
-## Current runnable
+## First: replace the notebook CSV (no execution)
 
-[**Topic + Section — next field profile (Python)**](notebooks/source-two-topic-section-next-field-profile-readonly.py)
+Download the [**private 67-row mapping review candidate**](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/Mapping/release_candidates/2026-10-15-topic-section-next-four/sources_source_runtime.csv) from the regular metadata-boundary branch. Use **Raw / Download** and replace the Snowflake Notebook Files entry named `sources_source_runtime.csv`. This file retains the prior **62 mapped-review rows exactly unchanged**, stages four new optional Topic/Section group properties and defers Section `INFORMATION`, which was null in all 10,566 records. The rolled-up Section criticality sum remains **diagnostic only** and is not activated.
 
-Open the link, copy its **entire code**, paste into **one new Python cell** in the existing `NB_ARCHER_OSCAL_MAPPER_V2` Snowflake DEV notebook session, and run **only that new cell**.
+**Do not rerun original Cells 1–7, registry setup, the last six-field Sub-Section COMMIT or the completed profile.** The previously accepted 62 mapping rows must remain loaded in the existing notebook Python session for the preflight comparison.
 
-This reads the cached `SOURCE_INPUTS["source-two-source"]["lookups"]["joined_sources"]` Topic and Section `CURATED_JSON`. It checks five additional scalar/prose mapping candidates plus one separately deferred criticality-rollup diagnostic, verifying source field population and shapes in one pass. Expected current scopes: 1,416 Topics and 10,566 Sections. **Outputs only aggregate counters and candidate statuses.** It does not print payloads, Content IDs, SQL table names, or source values.
+## Second: copy this one current PUBLIC Python runner
 
-**Do not** rerun the seven original mapper cells, any earlier Source Two PREVIEW/COMMIT, registry SQL, or the old six-field QA. If cache/session is missing, send the exact error and stop. Field source population is **not** mapping approval or a target PREVIEW.
+[**Open the next four Topic/Section no-write PREVIEW cell**](notebooks/source-two-topic-section-next-four-preview-only.py).
 
-## Mapping candidates being profiled
+Copy the entire Python file into one **NEW Python cell** in the same active Snowflake DEV notebook session and run **only the new cell**. The runner compiles the private candidate against the cached Source Two snapshot and hardcodes the execution as `PREVIEW` even if historic `OSCAL_LOAD_MODE` is `COMMIT`.
 
-Topic `DOCUMENT_NUMBER` → `catalog.groups[].props[document-number]`; Topic `TOTAL_NUMBER_OF_SECTIONS` → `catalog.groups[].props[section-count]`. Section `SECTION_SHORT_DESCRIPTION` → `catalog.groups[].groups[].props[short-description]`; Section `TOTAL_NUMBER_OF_SUB_SECTIONS` → `catalog.groups[].groups[].props[sub-section-count]`; Section `INFORMATION` → `catalog.groups[].groups[].parts[information].prose`. Section `SUM_OF_SUB_SECTION_CRITICALITY_VALUE` is **diagnostic only** pending owner semantics/path and is not enabled for mapping.
+The previous source profile reported 1,416 Topics and 10,566 Sections. `TOTAL_NUMBER_OF_SECTIONS` and `TOTAL_NUMBER_OF_SUB_SECTIONS` were numeric; `SECTION_SHORT_DESCRIPTION` was source text with 1,965 HTML-like values. The photo clipped the far-right type decision for `DOCUMENT_NUMBER`, so the new runner checks its actual 1,416 cached values: **1,403 JSON NULL and exactly 13 nonblank strings** before compiling or previewing. Anything else **stops without target DML**.
 
-The proposed Catalog paths follow existing mapped Topic/Section group ownership. The original review workbook has clipped paths for some of these fields. Any populated candidates need exact path/transform owner review before an additive no-target-DML PREVIEW.
+**Expected PREVIEW envelope (subject to actual DEV readback):** 33,679 DIM / 33,531 FACT graph identities, **0 DIM/FACT inserts**, **11,982 DIM payload updates** across Topic+Section groups, **0 FACT updates** and 21,697 unchanged DIM. No physical target writes or COMMIT. The remaining four field/source-to-exact-property value checks and owner approval of clipped source worksheet paths are separate gates after PREVIEW.
 
-## Public/private boundary
+Output begins `SOURCE_TWO_NEXT_FOUR_TOPIC_SECTION_CATALOG_PREVIEW` and should end `RESULT: PREVIEW_PASSED_NO_TARGET_DML; NEW_FOUR_FIELD_QA_PENDING`. If it says `SOURCE_TWO_TOPIC_SECTION_PREVIEW_BLOCKED_...` send the exact error; do not rerun old COMMIT cells.
 
-The public workbench retains only this active Python step, the README and a separately requested Change Control SQL diagnostic, which is not part of Source Two and remains untouched. Old completed runnable versions stay recoverable via Git history. Keep mapping CSVs, full engineering decisions, source payloads, screenshots and dated checkpoints in restricted project storage; confirm the source repository is actually private before uploading confidential material.
+## Repository boundaries
 
-**No source, registry, DIM or FACT target writes, and no COMMIT** are performed by this profiler.
+This public workbench holds only the current sanitized Python runnable, README, and previously requested unrelated `sql/change-control-dim-archer-trace.sql`. The completed Topic/Section source profiler was retired from the current worktree; it remains recoverable in Git history. Full CSVs, mapping decisions, tests, and client details stay in the PRIVATE OSCAL project repo.
+
+**No DIM/FACT source writes or COMMIT are performed by this PREVIEW.**
