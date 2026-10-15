@@ -1,0 +1,238 @@
+-- Source One / Authorization Package -> OSCAL: CLIENT VIEW SELECTS
+-- Evidence date: 2026-10-15. Read-only SQL; NO CREATE VIEW, DDL, DML or COMMIT.
+-- Checked against the maintained Source One CSV and DIM/FACT storage contracts on:
+--   Private branch work/source-one-tbd-props-2026-10-15
+-- These statements return PERSISTED OSCAL warehouse rows, not a notebook PREVIEW.
+-- Use in Snowflake DEV. Copy individual SELECT statements for client-owned views.
+-- Important: model SELECTS do not prove every field has already been committed.
+-- See Query 2 for all property values; Query 1 pivots to one scalar per property.
+-- Don't use MAX-pivot as a lossless replacement for a field with multiple values.
+-- Names/tables only; no private source records or user details are in this file.
+
+-- ================================================================
+-- QUERY 1: SSP PACKAGE-SUMMARY VIEW INPUT (ONE ROW PER SSP RECORD)
+-- 13 named output columns plus CONTENT_ID; source fields:
+-- package name (also metadata title), acronym, operational status,
+-- ATO date, authorization decision, submit date, expiration date,
+-- legacy SAP ID, alternate/system admin, entity, business.
+-- ================================================================
+WITH
+roots AS (
+    SELECT SOURCE_RECORD_ID
+    FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT
+    WHERE ELEMENT_TYPE = 'system-security-plan'
+      AND SOURCE_SYSTEM_NAME = 'ARCHER'
+      AND SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+),
+characteristics AS (
+    SELECT SOURCE_RECORD_ID, METADATA_JSON AS J
+    FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT
+    WHERE ELEMENT_TYPE = 'system-characteristics'
+      AND SOURCE_SYSTEM_NAME = 'ARCHER'
+      AND SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+),
+metadata AS (
+    SELECT SOURCE_RECORD_ID, METADATA_JSON AS J
+    FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT
+    WHERE ELEMENT_TYPE = 'metadata'
+      AND SOURCE_SYSTEM_NAME = 'ARCHER'
+      AND SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+),
+statuses AS (
+    -- 'status' is a separate DIM node, with a CONTAINS edge from characteristics.
+    SELECT st.SOURCE_RECORD_ID, MAX(st.METADATA_JSON:"state"::STRING) AS STATE
+    FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT st
+    JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.FACT_OSCAL_SSP_DEPENDENCY e
+      ON e.FK_TARGET_ELEMENT_HASH = st.PK_OSCAL_SSP_ELEMENT_HASH
+     AND e.DEPENDENCY_TYPE = 'CONTAINS'
+    JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT sc
+      ON sc.PK_OSCAL_SSP_ELEMENT_HASH = e.FK_SOURCE_ELEMENT_HASH
+     AND sc.SOURCE_RECORD_ID = st.SOURCE_RECORD_ID
+     AND sc.ELEMENT_TYPE = 'system-characteristics'
+    WHERE st.ELEMENT_TYPE = 'status'
+      AND st.SOURCE_SYSTEM_NAME = 'ARCHER'
+      AND st.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+    GROUP BY st.SOURCE_RECORD_ID
+),
+properties AS (
+    -- Each named property is stored in a DIM 'props' node under characteristics.
+    SELECT p.SOURCE_RECORD_ID,
+           p.METADATA_JSON:"name"::STRING AS PROPERTY_NAME,
+           p.METADATA_JSON:"value"::STRING AS PROPERTY_VALUE
+    FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT p
+    JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.FACT_OSCAL_SSP_DEPENDENCY e
+      ON e.FK_TARGET_ELEMENT_HASH = p.PK_OSCAL_SSP_ELEMENT_HASH
+     AND e.DEPENDENCY_TYPE = 'CONTAINS'
+    JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT sc
+      ON sc.PK_OSCAL_SSP_ELEMENT_HASH = e.FK_SOURCE_ELEMENT_HASH
+     AND sc.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+     AND sc.ELEMENT_TYPE = 'system-characteristics'
+    WHERE p.ELEMENT_TYPE = 'props'
+      AND p.SOURCE_SYSTEM_NAME = 'ARCHER'
+      AND p.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+),
+prop_pivot AS (
+    SELECT SOURCE_RECORD_ID,
+      MAX(IFF(PROPERTY_NAME = 'authorization-decision', PROPERTY_VALUE, NULL))
+        AS AUTHORIZATION_DECISION,
+      MAX(IFF(PROPERTY_NAME = 'authorization-package-submit-date', PROPERTY_VALUE, NULL))
+        AS AUTHORIZATION_PACKAGE_SUBMIT_DATE,
+      MAX(IFF(PROPERTY_NAME = 'atoiato-expiration-date', PROPERTY_VALUE, NULL))
+        AS ATOIATO_EXPIRATION_DATE,
+      MAX(IFF(PROPERTY_NAME = 'legacy-sap-id', PROPERTY_VALUE, NULL))
+        AS LEGACY_SAP_ID,
+      MAX(IFF(PROPERTY_NAME = 'alternate-system-administrator-sa', PROPERTY_VALUE, NULL))
+        AS ALTERNATE_SYSTEM_ADMINISTRATOR_SA,
+      MAX(IFF(PROPERTY_NAME = 'system-administrator-sa', PROPERTY_VALUE, NULL))
+        AS SYSTEM_ADMINISTRATOR_SA,
+      MAX(IFF(PROPERTY_NAME = 'entity', PROPERTY_VALUE, NULL))
+        AS ENTITY,
+      MAX(IFF(PROPERTY_NAME = 'business', PROPERTY_VALUE, NULL))
+        AS BUSINESS
+    FROM properties
+    GROUP BY SOURCE_RECORD_ID
+)
+SELECT r.SOURCE_RECORD_ID AS CONTENT_ID,
+       c.J:"system-name"::STRING AS AUTHORIZATION_PACKAGE_NAME,
+       m.J:"title"::STRING AS AUTHORIZATION_PACKAGE_METADATA_TITLE,
+       c.J:"system-name-short"::STRING AS ACRONYM,
+       s.STATE AS OPERATIONAL_STATUS,
+       c.J:"date-authorized"::STRING AS ATOIATO_DATE,
+       pr.AUTHORIZATION_DECISION,
+       pr.AUTHORIZATION_PACKAGE_SUBMIT_DATE,
+       pr.ATOIATO_EXPIRATION_DATE,
+       pr.LEGACY_SAP_ID,
+       pr.ALTERNATE_SYSTEM_ADMINISTRATOR_SA,
+       pr.SYSTEM_ADMINISTRATOR_SA,
+       pr.ENTITY,
+       pr.BUSINESS
+FROM roots r
+LEFT JOIN characteristics c ON c.SOURCE_RECORD_ID = r.SOURCE_RECORD_ID
+LEFT JOIN metadata m ON m.SOURCE_RECORD_ID = r.SOURCE_RECORD_ID
+LEFT JOIN statuses s ON s.SOURCE_RECORD_ID = r.SOURCE_RECORD_ID
+LEFT JOIN prop_pivot pr ON pr.SOURCE_RECORD_ID = r.SOURCE_RECORD_ID
+ORDER BY CONTENT_ID;
+
+-- ================================================================
+-- QUERY 2: SSP EXACT NAMED PROPERTIES, ONE ROW PER STORED PROP
+-- Lossless property rowset for 8 requested properties, including multiple
+-- values and explicit JSON nulls (inspect OSCAL_PROPERTY_JSON).
+-- Client can pivot this themselves or join it to the SSP summary.
+-- ================================================================
+SELECT p.SOURCE_RECORD_ID AS CONTENT_ID,
+       p.METADATA_JSON:"name"::STRING AS OSCAL_PROPERTY_NAME,
+       p.METADATA_JSON:"value"::STRING AS OSCAL_PROPERTY_VALUE,
+       p.METADATA_JSON AS OSCAL_PROPERTY_JSON
+FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT p
+JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.FACT_OSCAL_SSP_DEPENDENCY e
+  ON e.FK_TARGET_ELEMENT_HASH = p.PK_OSCAL_SSP_ELEMENT_HASH
+ AND e.DEPENDENCY_TYPE = 'CONTAINS'
+JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT sc
+  ON sc.PK_OSCAL_SSP_ELEMENT_HASH = e.FK_SOURCE_ELEMENT_HASH
+ AND sc.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+ AND sc.ELEMENT_TYPE = 'system-characteristics'
+WHERE p.ELEMENT_TYPE = 'props'
+  AND p.SOURCE_SYSTEM_NAME = 'ARCHER'
+  AND p.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+  AND p.METADATA_JSON:"name"::STRING IN (
+    'authorization-decision', 'authorization-package-submit-date',
+    'atoiato-expiration-date', 'legacy-sap-id',
+    'alternate-system-administrator-sa', 'system-administrator-sa',
+    'entity', 'business'
+  )
+ORDER BY CONTENT_ID, OSCAL_PROPERTY_NAME;
+
+-- ================================================================
+-- QUERY 3: SSP RESPONSIBLE PARTIES (ONE ROW PER ASSIGNED PARTY)
+-- INFORMATION_OWNER_IO and AUTHORIZING_OFFICIAL_AO are role assignments,
+-- not ordinary named scalar properties. Resolve party UUIDs to party
+-- names and external identifiers using the sibling 'parties' DIM rows.
+-- ================================================================
+WITH assignments AS (
+  SELECT a.SOURCE_RECORD_ID,
+         a.METADATA_JSON AS ASSIGNMENT_JSON
+  FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT a
+  JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.FACT_OSCAL_SSP_DEPENDENCY e
+    ON e.FK_TARGET_ELEMENT_HASH = a.PK_OSCAL_SSP_ELEMENT_HASH
+   AND e.DEPENDENCY_TYPE = 'CONTAINS'
+  JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT m
+    ON m.PK_OSCAL_SSP_ELEMENT_HASH = e.FK_SOURCE_ELEMENT_HASH
+   AND m.SOURCE_RECORD_ID = a.SOURCE_RECORD_ID
+   AND m.ELEMENT_TYPE = 'metadata'
+  WHERE a.ELEMENT_TYPE = 'responsible-parties'
+    AND a.SOURCE_SYSTEM_NAME = 'ARCHER'
+    AND a.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+    AND a.METADATA_JSON:"role-id"::STRING
+      IN ('information-owner', 'authorizing-official')
+),
+party_rows AS (
+  SELECT SOURCE_RECORD_ID, METADATA_JSON AS PARTY_JSON
+  FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT
+  WHERE ELEMENT_TYPE = 'parties'
+    AND SOURCE_SYSTEM_NAME = 'ARCHER'
+    AND SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+)
+SELECT a.SOURCE_RECORD_ID AS CONTENT_ID,
+       IFF(a.ASSIGNMENT_JSON:"role-id"::STRING = 'information-owner',
+           'INFORMATION_OWNER_IO', 'AUTHORIZING_OFFICIAL_AO') AS ARCHER_FIELD,
+       a.ASSIGNMENT_JSON:"role-id"::STRING AS OSCAL_ROLE_ID,
+       u.VALUE::STRING AS PARTY_UUID,
+       p.PARTY_JSON:"name"::STRING AS PARTY_NAME,
+       p.PARTY_JSON:"type"::STRING AS PARTY_TYPE,
+       p.PARTY_JSON:"external-ids" AS PARTY_EXTERNAL_IDS,
+       a.ASSIGNMENT_JSON AS RESPONSIBLE_PARTY_ASSIGNMENT_JSON
+FROM assignments a,
+     LATERAL FLATTEN(INPUT => a.ASSIGNMENT_JSON:"party-uuids") u
+LEFT JOIN party_rows p
+  ON p.SOURCE_RECORD_ID = a.SOURCE_RECORD_ID
+ AND p.PARTY_JSON:"uuid"::STRING = u.VALUE::STRING
+ORDER BY CONTENT_ID, ARCHER_FIELD, PARTY_UUID;
+
+-- ================================================================
+-- QUERY 4: ASSESSMENT RESULTS WORKFLOW_STATUS (NOT AN SSP FIELD)
+-- Workflow tracking field is in assessment-results.results[].props[].
+-- It is not the SSP operational status.
+-- ================================================================
+SELECT p.SOURCE_RECORD_ID AS CONTENT_ID,
+       'WORKFLOW_STATUS' AS ARCHER_FIELD,
+       p.METADATA_JSON:"name"::STRING AS OSCAL_PROPERTY_NAME,
+       p.METADATA_JSON:"value"::STRING AS WORKFLOW_STATUS,
+       p.METADATA_JSON AS OSCAL_PROPERTY_JSON
+FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_ASSESSMENT_RESULTS_ELEMENT p
+JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.FACT_OSCAL_ASSESSMENT_RESULTS_DEPENDENCY e
+  ON e.FK_TARGET_ELEMENT_HASH = p.PK_DIM_OSCAL_ASSESSMENT_RESULTS_ELEMENT_HASH
+ AND e.DEPENDENCY_TYPE = 'CONTAINS'
+JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_ASSESSMENT_RESULTS_ELEMENT r
+  ON r.PK_DIM_OSCAL_ASSESSMENT_RESULTS_ELEMENT_HASH = e.FK_SOURCE_ELEMENT_HASH
+ AND r.SOURCE_RECORD_ID = p.SOURCE_RECORD_ID
+ AND r.ELEMENT_TYPE = 'results'
+WHERE p.ELEMENT_TYPE = 'props'
+  AND p.SOURCE_SYSTEM_NAME = 'ARCHER'
+  AND p.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+  AND p.METADATA_JSON:"name"::STRING = 'workflow-status'
+ORDER BY CONTENT_ID;
+
+-- ================================================================
+-- QUERY 5: POAMS — POA&M ITEM REFERENCES PER PACKAGE CONTENT_ID
+-- The current Source One POAM reference mapper stores item identity as
+-- its OSCAL UUID/hash; it does not guarantee that the source referenced
+-- Archer ContentId is a separate property in METADATA_JSON.
+-- Do not mislabel UUID as Archer POAM ContentId.
+-- ================================================================
+SELECT item.SOURCE_RECORD_ID AS AUTHORIZATION_PACKAGE_CONTENT_ID,
+       item.OSCAL_UUID AS POAM_ITEM_OSCAL_UUID32,
+       item.METADATA_JSON AS POAM_ITEM_JSON
+FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_POAM_ELEMENT item
+JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.FACT_OSCAL_POAM_DEPENDENCY e
+  ON e.FK_TARGET_ELEMENT_HASH = item.PK_DIM_OSCAL_POAM_ELEMENT_HASH
+ AND e.DEPENDENCY_TYPE = 'CONTAINS'
+JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_POAM_ELEMENT root
+  ON root.PK_DIM_OSCAL_POAM_ELEMENT_HASH = e.FK_SOURCE_ELEMENT_HASH
+ AND root.SOURCE_RECORD_ID = item.SOURCE_RECORD_ID
+ AND root.ELEMENT_TYPE = 'plan-of-action-and-milestones'
+WHERE item.ELEMENT_TYPE = 'poam-items'
+  AND item.SOURCE_SYSTEM_NAME = 'ARCHER'
+  AND item.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+ORDER BY AUTHORIZATION_PACKAGE_CONTENT_ID, POAM_ITEM_OSCAL_UUID32;
+
+-- End client-select handoff. NO target writes.
