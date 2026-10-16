@@ -1,6 +1,31 @@
 # OSCAL — public copy-and-run workbench
 
-## CURRENT — generic production Cell 7, no pinned SSP numbers (2026-10-16)
+## Source One SSP physical COMMIT accepted (2026-10-16)
+
+**New owner Snowflake evidence:** The earlier, exact-count guarded Cell 7
+was executed with `mode=COMMIT` and returned top-level
+`COMMITTED_AND_VERIFIED` for `source-one / SSP`:
+**50,634 DIM inserts and 50,634 FACT inserts, zero updates and
+zero retirements**, `writes_executed=true`,
+`persisted=true`, `committed=true`, 0 lineage gaps,
+2,813 original records, 879,640 nodes and 876,827 edges.
+This is **the completed DEV batch**, not a pending PREVIEW.
+The loader's verified status confirms post-COMMIT validation completed;
+individual nested verification counters are cropped in the screenshot.
+
+**Next code-alignment step:** Paste the
+[current generic production Cell 7](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/07_mapper_orchestrator.py)
+over the older pinned Cell 7. Keep the default `PREVIEW` mode.
+**Do not rerun the completed COMMIT** and do not rerun unchanged Cell 6
+merely for this code update. The generic Cell 7 no longer hardcodes
+2,813 sources, 50,634 inserts or the old release fingerprint.
+All 168 mapping rows remain unchanged.
+
+[Latest owner-run Snowflake COMMIT checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-one-ssp-50634-dim-fact-owner-commit-readback.md).
+
+---
+
+## Generic Cell 7 architecture — accepted production source (2026-10-16)
 
 **Owner architectural decision:** Daily Archer-to-NIST OSCAL runs must not
 require yesterday's source count, graph node/edge counts, mapping
@@ -29,9 +54,9 @@ failing case identities. Source One mapping CSV untouched at **168 rules,
 owner DEV PREVIEW/QA for that previous run remain accepted but are NOT
 a new physical COMMIT/readback.
 
-The owner reports already running the **earlier hardcoded Cells 6/7**
-in Snowflake, but no final `OSCAL_PIPELINE_REPORT` from that run has
-been received here. **Do not assume it was PREVIEW or a successful COMMIT.**
+**Superseded by the newer owner screenshot above:** The earlier
+exact-count guarded Cells 6/7 did complete a physical SSP DEV COMMIT and
+returned `COMMITTED_AND_VERIFIED`. Do not repeat that batch.
 
 [Latest dated source-of-truth checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-generic-cell7-restored-no-hardcoded-approvals.md).
 
