@@ -1,36 +1,39 @@
 # OSCAL — public copy-and-run workbench
 
-## Current release step — standard SSP Cell 6/7 only (2026-10-16)
+## CURRENT — generic production Cell 7, no pinned SSP numbers (2026-10-16)
 
-**The owner has completed Source One SSP PREVIEW and QA**:
-168/168 approved executable mapping rules match between GitHub,
-cached Snowflake metadata and the uploaded notebook CSV. Seven changed
-OBJECT fields have 105/105 sampled source-to-candidate-value matches
-and 105 actual parent FACT links. Accepted no-write SSP PREVIEW:
-2,813 source records; 879,640 DIM and 876,827 FACT candidates;
-50,634 DIM/FACT proposed inserts, zero updates or retirements.
+**Owner architectural decision:** Daily Archer-to-NIST OSCAL runs must not
+require yesterday's source count, graph node/edge counts, mapping
+fingerprint, or expected insert totals in production Python. The
+one-off `OSCAL_COMMIT_APPROVALS` dictionary and its special route gate
+were removed from the existing **Cell 7**, restored to previously
+verified generic orchestration. **Cell 6 remains unchanged** with
+transactional preflight, obsolete-row blocking, rollback and post-COMMIT
+readback; exact expected counts can be optionally supplied in approved
+runtime configuration for a particular deployment.
 
-**No extra one-off commit runner and no new mapping CSV.**
-The existing private project now has the exact approved COMMIT guard
-inside its standard production Cells 6 and 7 (10/10 focused CI PASS,
-full historical CI failures unchanged). The owner copies these files
-directly from their authenticated OSCAL GitHub source:
+**[Open CURRENT complete generic Cell 7 source in OSCAL GitHub](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/07_mapper_orchestrator.py).**
+Copy the complete file directly from GitHub to the existing Cell 7.
+There is **no new runner and no need to re-run unchanged Cell 6**
+merely to align the notebook source. Keep `OSCAL_LOAD_MODE = "PREVIEW"`
+until the last executed Cell 6/7 result and any pending warehouse
+COMMIT outcome are confirmed. Do not blindly rerun COMMIT.
 
-1. [Open maintained production Cell 6](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/06_validation_and_guarded_loader.py)
-   — paste complete code into the existing Cell 6 and run that cell once.
-2. [Open maintained production Cell 7](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/07_mapper_orchestrator.py)
-   — paste complete code into existing Cell 7. Default remains PREVIEW.
-   **Only after explicit authorization to write to DEV**, change
-   `OSCAL_LOAD_MODE` to `COMMIT` and run **Cell 7 once**. Its new
-   reviewed guard checks the accepted fingerprint and exact release
-   counts before writing; Cell 6 rechecks again in transaction.
+**Verified GitHub change:** source commit
+`7fa19eaeb79b25b109ad0246d6b8faca755c4192`;
+6/6 focused generic/CSV-preservation tests PASS and generated
+notebook check PASS in [CI 38906325754](https://github.com/theenduser009/Oscal-mapping-strategy/actions/runs/38906325754).
+Historical broad CI still reports 28 FAIL / 88 ERROR with no new
+failing case identities. Source One mapping CSV untouched at **168 rules,
+165 approved, all 50 Control Implementation approved**. Previous
+owner DEV PREVIEW/QA for that previous run remain accepted but are NOT
+a new physical COMMIT/readback.
 
-Use the same cached accepted SSP Snowflake DEV notebook session, pause
-other target writers, do NOT rerun Cells 1–5, registry SQL, additional
-diagnostics, or blindly retry an unknown COMMIT. No new Snowflake
-COMMIT/readback has occurred in this chat.
+The owner reports already running the **earlier hardcoded Cells 6/7**
+in Snowflake, but no final `OSCAL_PIPELINE_REPORT` from that run has
+been received here. **Do not assume it was PREVIEW or a successful COMMIT.**
 
-[October 16 dated private OSCAL checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-ssp-production-cell7-exact-commit-guard-ready.md).
+[Latest dated source-of-truth checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-generic-cell7-restored-no-hardcoded-approvals.md).
 
 ---
 
