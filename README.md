@@ -1,6 +1,47 @@
 # OSCAL — public copy-and-run workbench
 
-## Seven-object PREVIEW value/FACT QA — current (October 15, 2026)
+## SSP 168-row GitHub CSV semantic reconciliation — CURRENT (October 15, 2026)
+
+**Accepted owner Snowflake result:** Source One SSP seven-object QA
+`PASS_SAMPLED_SEVEN_FIELDS_SOURCE_TO_GRAPH_AND_PARENT_FACT`, **15 source IDs,
+105/105 matched source-field property values, 105 correct containment FACT
+edges, 0 field mismatches**; 2,813 original Source records profiled.
+`PREVIEW_VARIABLE_SOURCE=STANDARD_CELL7_PREVIEW`,
+`MAPPING_INPUT_SCOPE=CACHED_168_JSON_TEXT_RULES`, zero target DML.
+**Remaining discrepancy:** `NOTEBOOK_FILES_CSV_BLOB=FILE_DIFFERS_FROM_CURRENT_GIT_CSV`.
+This may reflect notes or formatting; it has NOT yet been classified.
+
+**[OPEN CURRENT ONE-CELL READ-ONLY GitHub-versus-Notebook executable mapping reconciliation](notebooks/source-one-168-mapping-git-semantic-diff-readonly.py).**
+
+Copy the **entire Python file** from GitHub and paste into **one NEW Python
+cell** in the SAME successful SSP notebook session; execute that cell only.
+No code downloads, no source reload, no Cells 1-7 rerun, no target SQL or
+DIM/FACT COMMIT.
+
+The executable does **not contain the private CSV**; it contains only
+GitHub-derived SHA256 row digests for the 168 accepted records. It separately
+checks the cached mapping inputs, the current Notebook Files CSV bytes and
+their **18 executable columns** against the authoritative GitHub version
+(blob `b9f982c445f293f9b5d47cab565194aa29ef8770`). Only
+`NOTES` and CSV ordering/formatting are excluded from its semantic comparison.
+It reports names of any differing mapped fields, never confidential Archer
+values or Content IDs.
+
+**Return:** `CACHED_EXECUTABLE_RULES_MATCH_GIT`,
+`NOTEBOOK_FILE_EXECUTABLE_RULES_MATCH_GIT`,
+`NOTEBOOK_FILE_EXACT_GIT_BLOB_MATCH`, `CACHED_RULES_MATCH_NOTEBOOK_FILE`
+and `RESULT`. If it reports mismatches, return the short
+`DIFFERING_FIELDS_MAX_20` lines too. Do **not** COMMIT.
+
+**Validation:** Public script read back from GitHub, private test mirror
+byte-identical; 7/7 focused CI tests PASS, including exact canonical Git CSV,
+notes-only change, CSV order/line endings, changed transform and stale cached
+file. Full suite retains baseline 28 FAIL/88 ERROR with zero new failures.
+[Accepted QA and current checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-15-ssp-seven-object-live-value-fact-qa-pass-notebook-csv-drift.md).
+
+---
+
+## Earlier — seven-object PREVIEW value/FACT QA (accepted October 15, 2026)
 
 **Corrected QA after singleton-parent false positive (October 15, 2026):**
 The owner's first QA run stopped with `WRONG_PROPERTY_PARENT_INSTANCE`.
