@@ -1,5 +1,48 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — Source Two 11-field live profile reviewed; next exact shape check (2026-10-16)
+
+**Owner live Snowflake DEV evidence:** Existing PUBLIC 11-field
+read-only profiler was executed in the SAME seven-cell Snowflake
+notebook. Source `SOURCE_LINKS` = 62 nonempty object arrays /
+86 nulls (148 records); all 148 Source, 1,416 Topic and
+20,000 Sub-Section date/create/updated fields are **timestamp-shaped
+strings with no timezone offset**; Section criticality sum is
+10,566 numeric values; Section `INFORMATION` and Sub-Section
+`INFORMATION`/`SUBSECTION_CRITICALITY_VALUE` have no populated values.
+This is **source shape profiling**, not a new mapping/warehouse COMMIT.
+
+The earlier completed CATALOG `COMMITTED_AND_VERIFIED` state remains
+accepted: **11,982 DIM updates**, zero FACT changes, 148 records,
+33,679 DIM nodes and 33,531 FACT edges; post-COMMIT loader readback
+had 0 remaining changes. **Do not rerun this COMMIT.**
+
+**ONE NEXT ACTION — [OPEN THE COMPLETE PUBLIC ONE-CELL Source Two LINKS + SCALAR DETAIL QA](notebooks/source-two-catalog-links-and-scalar-gates-readonly.py)**
+
+Copy the entire linked Python file into ONE NEW Python cell in the
+same `NB_ARCHER_OSCAL_MAPPER_V2` Snowflake DEV session and run **only
+that cell**. It reuses the retained four-level source snapshot and
+prints only aggregate `source_links` member/key/type/URI-scheme
+counts, strict timestamp validity/timezone/whitespace counts for six
+date fields, and finite numeric counts for Section criticality.
+**It does not print URLs/business values/Content IDs or modify
+DIM, FACT or registry; no DDL, DML, MERGE or COMMIT.**
+Return JSON status `READ_ONLY_SOURCE_TWO_NEXT_MAPPING_DETAIL_GATES`.
+
+[Private latest owner source-profile checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-catalog-eleven-field-owner-live-profiler-and-next-map-gates.md)
+and [next five-group-prop proposal / detailed QA checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-catalog-next-five-group-props-proposed-public-detail-qa.md)
+require owner-authorized private access. Public/private diagnostic
+mirrors are identical Git blob
+`a0d294f90500a9d75e85f2e8b6539c55ee6ea0ef`;
+a non-executable private 11-field candidate review ledger exists,
+but **no executable Source Two CSV, seven production cells, registry
+or Snowflake target data was changed** by this new mapping review.
+Public/private GitHub readback and no-write static checks passed;
+the detailed QA has **not yet been live executed in Snowflake**.
+
+---
+
+
 ## CURRENT — Source Two CATALOG COMMITTED; next field profiler ready (2026-10-16)
 
 **Owner Snowflake DEV COMMIT verified:** Existing single seven-cell
