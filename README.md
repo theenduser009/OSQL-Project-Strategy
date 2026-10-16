@@ -1,5 +1,54 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — October 16: CATALOG 31,982-update PREVIEW PASS; FIVE-FIELD QA before COMMIT
+
+**New owner Snowflake DEV screenshot:** one `source-two-source / CATALOG`
+`PREVIEW_COMPLETE`, 148 roots, 33,679 candidate DIM, 33,531 FACT,
+**31,982 proposed DIM updates**, 1,697 unchanged DIM, 0 DIM/FACT
+inserts and 0 FACT changes, no lineage gaps, graph/storage/prewrite
+PASS, **zero writes/persisted/committed**. This is the next five-field
+batch **PREVIEW only**. The older 11,982-DIM-update CATALOG
+`COMMITTED_AND_VERIFIED` is an older accepted batch and **must not
+be rerun**.
+
+**ONE NEXT ACTION — COPY AND RUN [COMPLETE FIVE-FIELD CATALOG PREVIEW
+PARITY READ-ONLY PYTHON FILE](notebooks/source-two-catalog-five-field-preview-parity-readonly.py).**
+
+Open the GitHub file, copy its entire contents into ONE NEW Python
+cell in the SAME `NB_ARCHER_OSCAL_MAPPER_V2` DEV notebook after the
+successful 31,982-update PREVIEW, and execute **only that cell**.
+Do **NOT** change Cell 7 to COMMIT or rerun Cells 1–7.
+
+The single cell verifies all FIVE mapped Archer child fields against
+their exact CATALOG group-property values, uses the real Source Two
+child identity/parent hierarchy, and runs READ-ONLY Snowpark SELECTs
+to ensure changed DIM paths are **only** 1,416 Topic, 10,566 Section,
+20,000 Sub-Section. It also verifies the selected 57 CATALOG rules,
+mapping fingerprint and exact 31,982-update PREVIEW envelope.
+The code prints only aggregate field counts/path counts—not Archer
+business values or Content IDs. No DDL, DML, MERGE, COMMIT, registry
+mutation, or new source load.
+
+**Return** `OSCAL_FIVE_FIELD_QA_REPORT` including
+`result`, `field_mismatches_total`, `changed_path_gate`,
+`updated_path_counts` and `missing_dim_target_keys`.
+If the QA blocks, do NOT COMMIT—return its report.
+Even if it passes, physical COMMIT remains a separate owner
+decision; the Section property name `sub-section-criticality-sum`
+is a proposed extension property whose original source worksheet
+suffix was clipped.
+
+**GitHub publication verified:** public file and private
+`Oscal-mapping-strategy/simplify-metadata-boundary/notebooks/validation/READ_ONLY_SOURCE_TWO_CATALOG_FIVE_FIELD_PREVIEW_PARITY_2026_10_16.py`
+have identical Git blob `ec06c6fea5aabf2905b4f4a33e86d5f62256064b`.
+Static no-write/scope checks and GitHub readback pass;
+**Snowflake live QA is pending**.
+[Latest private dated checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-31982-preview-five-field-parity-next-no-commit.md)
+(requires authenticated private GitHub access).
+
+---
+
+
 ## CURRENT — Oct 16: five Source Two Catalog property mappings drafted; do not rerun completed work
 
 The owner's most recent two Snowflake screenshots are a repeat of the
