@@ -1,5 +1,53 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — October 16: Source Two CATALOG first; five-field COMMIT completed, next five scalars staged
+
+**Owner Snowflake DEV actual:** latest `source-two-source / CATALOG`
+**COMMITTED_AND_VERIFIED** with 148 roots, 33,679 DIM and
+33,531 FACT, **31,982 DIM updates**, 0 FACT changes and zero
+pending post-COMMIT inserts/updates. Earlier five-field source-value
+QA matched 53,398/53,398. **Do not rerun COMMIT or old QA.**
+
+**Owner scope decision:** complete all CATALOG mappings across four
+Source Two worksheets (Source, Topic, Section, Sub-Section)—including
+Catalog Metadata, Group, native controls/Back Matter dispositions—
+**before** moving to Assessment Results/Component Definition.
+
+**Actual private Source Two XLSX and its 243 mapping rows were checked.**
+[Private four-level mapping disposition](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/Mapping/SOURCE2_CATALOG_FOUR_TAB_FULL_FIELD_DISPOSITION_2026-10-16.csv)
+has 57 selected Catalog rules, 107 unrelated-model worksheet rows for
+later, 79 Catalog-related/derived/native/control/Back Matter review rows.
+A new 75-row private [five-more-field Catalog proposal](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/Mapping/release_candidates/2026-10-16-catalog-profile-next/REVIEW_ONLY_75_ROW_NEXT_FIVE_CATALOG_SCALAR_CANDIDATE.csv)
+is STAGED REVIEW ONLY. It preserves the previous 70 rows, adds five
+straightforward Source/Section/Sub-Section props using the existing
+generic engine, and has not been owner-approved, PREVIEWED or COMMITTED.
+
+**IMPORTANT newer owner history:** Prior October 13 Control Standards
+business-field analysis was ALREADY EXECUTED (1,606 distinct referenced
+Control Standards, code-like `CONTROL_STANDARD_NAME` present in all,
+but 687 without both alternate business IDs/descriptive titles).
+The owner explicitly DEFERRED native controls[] until authoritative
+title/reuse handling was chosen. The October 9 ID/title diagnostic
+[`notebooks/source-two-control-standards-populated-id-title-readonly.py`](notebooks/source-two-control-standards-populated-id-title-readonly.py)
+was republished as a historical utility, **NOT a CURRENT action**.
+**DO NOT run it again** or repeat the already accepted 39,897/39,897
+direct `CONTROL_STANDARDS` target-ID reconciliation.
+
+**One next owner action:** review/approve the FIVE exact Source2 Catalog
+scalar property mappings in the private 75-row candidate as a single
+batch; then a new CATALOG-only DEV PREVIEW and field-value QA,
+separate later COMMIT on authorization. Native Control Standards
+and Back Matter remain Catalog-only work requiring explicit scope/
+title/URI decisions, not automatic new IDs or model hopping.
+
+[Authoritative dated private checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-catalog-243-row-reconciliation-and-next-five-scalars.md).
+All older "current" sections below are retained as dated history and
+superseded by this status. Public repo holds sanitized copy-run
+diagnostics, never confidential mapping CSVs, payloads or credentials.
+
+---
+
+
 ## CURRENT — October 16: CATALOG 31,982-update PREVIEW PASS; FIVE-FIELD QA before COMMIT
 
 **New owner Snowflake DEV screenshot:** one `source-two-source / CATALOG`
