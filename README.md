@@ -1,5 +1,44 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — Oct 16: five Source Two Catalog property mappings drafted; do not rerun completed work
+
+The owner's most recent two Snowflake screenshots are a repeat of the
+**completed FIRST 11-field read-only profile** `READ_ONLY_SOURCE_TWO_CATALOG_FIELD_SHAPES`.
+They do not show execution of the second detailed link/number profiler.
+**A second broad profile is NOT required to decide the next five straightforward
+Catalog group property mappings.** The previous CATALOG
+`COMMITTED_AND_VERIFIED` with **11,982 DIM updates** and **0 FACT updates**
+remains accepted; do not rerun that commit.
+
+The private OSCAL repository `simplify-metadata-boundary` now has a
+**REVIEW-ONLY 70-row mapping candidate** derived from the current 67-row
+candidate. It maps four Topic/Sub-Section creation/update timestamps to
+named group extension properties (without inventing timezone) and one
+Section sub-section criticality sum numeric property. It has **NOT**
+been owner-approved, copied into Snowflake Notebook Files, previewed or
+committed. No production seven-cell code, active mappings or registry
+was changed. The Section sum property name remains a proposal because
+the source worksheet transcription is clipped.
+
+[Private 70-row candidate and five-field mapping details](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-70-row-five-field-staged-metadata-only-no-deployment.md)
+(requires authenticated private GitHub access).
+
+**NEXT ACTION:** approve/correct the five specific proposed
+field/property destinations, especially `sub-section-criticality-sum`.
+Then the private executable Source Two release can be prepared and
+tested, followed by ONE CATALOG `PREVIEW` and field-level source/target
+QA before any separately approved COMMIT. **No new Snowflake cell needs
+running now for these five decisions.**
+
+The existing [optional second targeted Source-links and strict
+date/number diagnostic](notebooks/source-two-catalog-links-and-scalar-gates-readonly.py)
+remains available **only for the later native `SOURCE_LINKS` / source
+timestamp semantics investigation**, not as a gate blocking these five.
+No private CSV or client information is in this public README.
+
+---
+
+
 ## CURRENT — Source Two 11-field live profile reviewed; next exact shape check (2026-10-16)
 
 **Owner live Snowflake DEV evidence:** Existing PUBLIC 11-field
