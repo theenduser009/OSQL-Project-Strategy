@@ -98,7 +98,7 @@ def inspect_catalog_back_matter(namespace=None):
         elif isinstance(value, list):
             for item in value:
                 inspect(item, path + "[]", depth + 1, counts, notices)
-        elif isinstance(value, str):
+        elif isinstance(value, str) and value.strip():
             form, decoded = text_form(value)
             form_signature = (path, form)
             if form_signature in counts or len(counts) < max_signatures:
