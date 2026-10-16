@@ -1,5 +1,54 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — Source Two CATALOG COMMITTED; next field profiler ready (2026-10-16)
+
+**Owner Snowflake DEV COMMIT verified:** Existing single seven-cell
+`NB_ARCHER_OSCAL_MAPPER_V2`, `source-two-source / CATALOG`, now reports
+`COMMITTED_AND_VERIFIED`: **148 records, 33,679 DIM, 33,531 FACT**;
+**11,982 DIM updates**, **0 DIM/FACT inserts, 0 FACT updates**,
+0 lineage gaps/approved retirements. Built-in post-COMMIT readback
+found **0 pending DIM/FACT inserts or updates**. These are new
+owner-supplied live results, superseding the earlier CATALOG
+`PREVIEW pending` / `COMMIT pending` sections below.
+**Do not run that COMMIT again.** This does not establish new
+Assessment Results/POAM/SAP commits or full OSCAL document conformance.
+
+**NEXT ACTION — OPEN AND COPY ONE READ-ONLY PYTHON CELL:**
+
+[**Source Two CATALOG next-field profiler — open this complete Python file**](notebooks/source-two-catalog-next-fields-readonly.py)
+
+1. Click the linked file in this public repository.
+2. Copy its entire contents into **one NEW Python cell** in the
+   **same** Snowflake DEV notebook `NB_ARCHER_OSCAL_MAPPER_V2`.
+3. Execute **only that cell**. It reuses retained Source Two
+   Source/Topic/Section/Sub-Section frames and prints field-wise
+   `rows_scanned` and `shape_counts` for **11 field/level combinations**.
+   Return the aggregate `READ_ONLY_SOURCE_TWO_CATALOG_FIELD_SHAPES` JSON.
+   **Do not rerun Cells 1–7 or COMMIT.**
+
+The profiler issues read-only Snowpark SELECT operations on retained
+frames. It has **no target DIM/FACT writes, MERGE, registry DDL or COMMIT**.
+It prints no business values or Content IDs. If retained frames are
+missing, it stops; do not rebuild or repeat a completed COMMIT.
+
+**Code and checkpoint boundaries:** All production seven-cell mapper
+code, private mappings, status and owner-specific evidence remain in
+the **private** `theenduser009/Oscal-mapping-strategy` repository,
+branch `simplify-metadata-boundary`. Public `OSQL-Project-Strategy/main/notebooks/`
+is **copy-and-run read-only diagnostics only**, not a second mapper.
+See the private [canonical code/evidence directory guide](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/CODE_LOCATIONS_AND_EVIDENCE_PRECEDENCE.md)
+and [October 16 COMMIT checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-catalog-11982-dim-updates-owner-commit-readback.md)
+(authenticated private access required).
+
+**Publication gate:** public executable and private mirror Git blob
+`225f4aabbe1f86e7ce71ad11e3254c621a7f9a64`
+match; exact-file Python syntax and mocked four-level, 11-field
+aggregate-only tests PASS. This is **not a live Snowflake run of the profiler**.
+The public file contains no private mapping CSV, source values or credentials.
+
+---
+
+
 ## CURRENT — Source Two CATALOG compiler and nested hierarchy restored (2026-10-16)
 
 **Owner Snowflake issue (same notebook, no other notebook):** CATALOG
