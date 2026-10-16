@@ -1,5 +1,44 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — Oct 16: Source Two CATALOG next five scalar PREVIEW-only input prepared
+
+**The previous 31,982 Source Two Catalog DIM updates are physically
+COMMITTED_AND_VERIFIED**, with 0 FACT changes and loader
+postcommit 0 pending rows. Do not rerun Cell7 COMMIT or old QA.
+
+A NEW five-field Catalog-only incremental file has been staged
+**PRIVATELY**, not published here because the full source mapping CSV
+is private. [Open exact private GitHub file and instructions](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/Mapping/release_candidates/2026-10-16-catalog-next-five-preview-only/README.md).
+Private file `Mapping/release_candidates/2026-10-16-catalog-next-five-preview-only/sources_source_runtime.csv`
+has 75 mapping rows / 62 selected CATALOG rules and preserves
+previous 70-row reviewed candidate exact. Newly appended fields
+include Source content id and confirmed-date, Section topic-name/
+confirmed-date, Sub-Section topic-name props, all using existing
+seven-cell mapper transforms.
+
+**ONE next user action, NOT a COMMIT:** In existing Snowflake DEV
+`NB_ARCHER_OSCAL_MAPPER_V2`, replace ONLY Notebook Files
+`sources_source_runtime.csv` with this private 75-row version,
+select `CATALOG` only, keep shared writes FALSE, set Cell7
+`OSCAL_LOAD_MODE="PREVIEW"`, run Cells1→7 once and return one
+`OSCAL_PIPELINE_REPORT`. No new parser/registry needed; do not
+assume prospective DIM updates. Batch source-value QA follows preview.
+
+**Do not run the public `source-two-control-standards-populated-id-title-readonly.py`
+again.** The owner ALREADY ran this business ID/title work October 13;
+the older October 9 profiler-pending notes below are superseded.
+1,606 referenced Control Standards code-like names are present,
+1,603 requirements, 919 authoritative alternative IDs/descriptive titles,
+844 alternate ARCHER IDs/names, 687 missing both; owner previously
+chose to DEFER native controls pending title/reuse policy. Direct
+39,897/39,897 Control Standards reference matches also already accepted.
+Preserve these, native controls and Back Matter remain CATALOG scope.
+**Do not jump to Assessment Results or Component Definition.**
+
+[New private dated Catalog-first checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-catalog-next-five-75-row-preview-release-ready.md).
+
+---
+
 ## CURRENT — October 16: Source Two CATALOG first; five-field COMMIT completed, next five scalars staged
 
 **Owner Snowflake DEV actual:** latest `source-two-source / CATALOG`
