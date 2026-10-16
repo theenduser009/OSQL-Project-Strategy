@@ -1,5 +1,56 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — Oct 16, 2026: Source Two 75-row CATALOG QA PASS; guarded 30,566 DIM COMMIT next
+
+**Owner-run read-only QA just passed in Snowflake DEV.** Of FIVE new
+CATALOG field mappings, **Section `TOPIC_NAME` 10,566/10,566** and
+**Sub-Section `TOPIC_NAME` 20,000/20,000** matched their exact
+embedded group `props[topic]`; **zero mismatches**, exact changed
+path gate PASS, 62 CATALOG mapping rules, mapping fingerprint matches
+the current 30,566-update PREVIEW. The THREE other Source/Section
+Content ID/confirmation fields have **0 populated original source
+values** and were correctly omitted—not tested with populated values.
+The `result` is `PASS_VALUES_AND_PATHS_SOURCE_EMPTY_FIELDS_UNTESTED`,
+not a five-populated-field PASS. No target DML/COMMIT yet.
+The previous separate CATALOG 31,982-DIM-update release was already
+COMMITTED_AND_VERIFIED, must not be rerun.
+
+**ONE NEXT OWNER ACTION**
+[OPEN AND COPY COMPLETE CATALOG 30,566-UPDATE COMMIT APPROVAL GUARD
+(one read-only Python cell)](notebooks/source-two-catalog-30566-commit-approval-guard.py).
+Paste into ONE NEW Python cell in the same existing
+`NB_ARCHER_OSCAL_MAPPER_V2` Snowflake DEV session.
+Run the guard only and require
+`CATALOG_DEV_COMMIT_GUARD_ARMED_NO_WRITES`.
+It verifies the exact PREVIEW/QA/fingerprint and arms the optional
+existing Cell6 exact change/retirement envelope; the guard itself
+**does not write to Snowflake**.
+
+**THEN** the owner explicitly changes **existing Cell 7 only** to
+`OSCAL_LOAD_MODE="COMMIT"` and runs that cell **ONCE** with no
+concurrent Catalog target writer. Do not rerun Cells1–6.
+Expected guard values: DIM 0 inserts/30,566 updates/3,113 unchanged;
+FACT 0 inserts/0 updates/33,531 unchanged; zero retirements.
+Only accept `COMMITTED_AND_VERIFIED` with zero pending inserts/updates
+in the nested post-COMMIT readback. Unknown outcome = STOP, no retry.
+Return full new `OSCAL_PIPELINE_REPORT`.
+
+Public executable and private
+`Oscal-mapping-strategy/simplify-metadata-boundary/notebooks/validation/READ_ONLY_CATALOG_30566_EXACT_COMMIT_APPROVAL_GUARD_2026_10_16.py`
+byte-identical Git blob
+`11770903b309f288bbf5c251b7c377a8d0b5b66d`,
+actual GitHub re-fetch verified. Static no-SQL/write and scope checks
+passed; guard not yet run in Snowflake, and commit not yet performed.
+
+[Authoritative private QA/guard checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-75row-five-new-field-live-qa-pass-empty-source-30566-guarded-commit-next.md).
+CATALOG ONLY across four Source Two tables until fully dispositioned.
+Native controls and Back Matter remain unresolved; prior October 13
+Control Standards ID/title profiler already run—do not repeat.
+Older “current” sections below are historical.
+
+---
+
+
 ## CURRENT — October 16, 2026: Source Two CATALOG 75-row PREVIEW PASS (30,566 updates); five new-field QA next
 
 Owner Snowflake DEV `NB_ARCHER_OSCAL_MAPPER_V2` now reports
