@@ -1,5 +1,46 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — October 16, 2026: Source Two CATALOG 75-row PREVIEW PASS (30,566 updates); five new-field QA next
+
+Owner Snowflake DEV `NB_ARCHER_OSCAL_MAPPER_V2` now reports
+`source-two-source / CATALOG`, **`PREVIEW_COMPLETE / PREVIEW_PASSED_NO_TARGET_DML`**:
+148 source records, 33,679 DIM, 33,531 FACT, **30,566 proposed DIM updates**
+and 3,113 unchanged, 0 new inserts or FACT changes, 0 lineage gaps,
+valid graph/storage/prewrite contract, 0 retirements, no writes or COMMIT.
+This supersedes the old **75-row PREVIEW pending** task below.
+The earlier **31,982-DIM-update CATALOG COMMITTED_AND_VERIFIED** remains
+a separate completed prior batch—never repeat it.
+
+**ONE NEXT ACTION — [OPEN/COPY THE COMPLETE 75-ROW CATALOG FIVE-NEW-FIELD
+READ-ONLY QA PYTHON FILE](notebooks/source-two-catalog-next-five-30566-preview-value-qa-readonly.py).**
+Paste its full contents into ONE NEW Python cell in the SAME
+successful Snowflake DEV notebook; run ONLY that cell. It reuses
+the current retained `MODEL_GRAPHS`, `PIPELINE_REPORT`,
+`SOURCE_INPUTS`, validates 62 selected CATALOG rules and
+the 30,566-update envelope and exact field paths, compares all
+five new Source/Section/Sub-Section fields to their original
+cached Archer values and checks changed DIM paths from read-only
+Snowpark SELECTs. It prints per-field counts, including
+populated vs absent source data, **no raw record IDs/values**.
+Return `SOURCE_TWO_NEXT_FIVE_QA` and the final `result`.
+**No rerun Cells 1–7, no COMMIT, no target DML.**
+
+The public file matches the PRIVATE mirrored validation cell at
+`Oscal-mapping-strategy/simplify-metadata-boundary/notebooks/validation/READ_ONLY_SOURCE_TWO_CATALOG_75_ROW_NEXT_FIVE_30566_PREVIEW_QA_2026_10_16.py`,
+both readback-verified exact Git blob
+`996dfa270acbc077a30f6ba7fa3302907d0fbca9`.
+Static no-write and field-scope checks completed.
+**This new QA cell has not yet been executed in live Snowflake
+or independently Python syntax/runtime-tested.**
+
+[Latest source-of-truth private checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-catalog-75-row-preview-30566-updates-next-five-readonly-parity.md).
+All four Source Two tables remain scoped to **CATALOG only**;
+no Assessment Results or Component Definition model switch.
+Older workbook/Control Standards deferral decisions are preserved
+in the private project continuity documents.
+
+---
+
 ## CURRENT — Oct 16: Source Two CATALOG next five scalar PREVIEW-only input prepared
 
 **The previous 31,982 Source Two Catalog DIM updates are physically
