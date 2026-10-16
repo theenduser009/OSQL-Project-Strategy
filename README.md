@@ -1,6 +1,40 @@
 # OSCAL — public copy-and-run workbench
 
-## SSP 168-row GitHub CSV semantic reconciliation — CURRENT (October 15, 2026)
+## Current release step — standard SSP Cell 6/7 only (2026-10-16)
+
+**The owner has completed Source One SSP PREVIEW and QA**:
+168/168 approved executable mapping rules match between GitHub,
+cached Snowflake metadata and the uploaded notebook CSV. Seven changed
+OBJECT fields have 105/105 sampled source-to-candidate-value matches
+and 105 actual parent FACT links. Accepted no-write SSP PREVIEW:
+2,813 source records; 879,640 DIM and 876,827 FACT candidates;
+50,634 DIM/FACT proposed inserts, zero updates or retirements.
+
+**No extra one-off commit runner and no new mapping CSV.**
+The existing private project now has the exact approved COMMIT guard
+inside its standard production Cells 6 and 7 (10/10 focused CI PASS,
+full historical CI failures unchanged). The owner copies these files
+directly from their authenticated OSCAL GitHub source:
+
+1. [Open maintained production Cell 6](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/06_validation_and_guarded_loader.py)
+   — paste complete code into the existing Cell 6 and run that cell once.
+2. [Open maintained production Cell 7](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/07_mapper_orchestrator.py)
+   — paste complete code into existing Cell 7. Default remains PREVIEW.
+   **Only after explicit authorization to write to DEV**, change
+   `OSCAL_LOAD_MODE` to `COMMIT` and run **Cell 7 once**. Its new
+   reviewed guard checks the accepted fingerprint and exact release
+   counts before writing; Cell 6 rechecks again in transaction.
+
+Use the same cached accepted SSP Snowflake DEV notebook session, pause
+other target writers, do NOT rerun Cells 1–5, registry SQL, additional
+diagnostics, or blindly retry an unknown COMMIT. No new Snowflake
+COMMIT/readback has occurred in this chat.
+
+[October 16 dated private OSCAL checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-ssp-production-cell7-exact-commit-guard-ready.md).
+
+---
+
+## Prior step — completed GitHub CSV semantic reconciliation (October 15, 2026)
 
 **Accepted owner Snowflake result:** Source One SSP seven-object QA
 `PASS_SAMPLED_SEVEN_FIELDS_SOURCE_TO_GRAPH_AND_PARENT_FACT`, **15 source IDs,
