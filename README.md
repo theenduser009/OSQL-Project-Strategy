@@ -1,5 +1,47 @@
 # OSCAL — public copy-and-run workbench
 
+## CURRENT — Source Two CATALOG compiler and nested hierarchy restored (2026-10-16)
+
+**Owner Snowflake issue (same notebook, no other notebook):** CATALOG
+PREVIEW stopped `FAILED_BEFORE_COMMIT` because the Source Two 67-row
+mapping file includes `oscal-token` and `prose-direct`, but
+the previously shared Cell 3 did not register them; Cell 1 also lacked
+the earlier accepted Topic→Section→Sub-Section joined RAW bindings.
+52 Catalog rows were blocked by the compiler, no DIM/FACT writes.
+The existing 67-row `sources_source_runtime.csv` is ALREADY in
+the owner's Notebook Files; **do not request another upload**.
+
+**Fixed in existing shared seven-cell production code (not another runner):**
+
+- [Maintained Cell 1](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/01_initialization_and_configuration.py)
+  — restored Source Two joined lookup contracts and hierarchy; after
+  pasting, set `SELECTED_MODELS=("CATALOG",)` (Git source defaults SSP).
+- [Maintained Cell 3](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/03_canonical_mapping_contract.py)
+  — restored approved ID and narrative transforms without losing Source
+  One's JSON-text null-preservation.
+- [Maintained Cell 4](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/notebooks/cells/04_parsing_transform_payload_helpers.py)
+  — restored exact original Sub-Section prose, token normalization and
+  accepted group-parent/source-ID relationships.
+
+**ONE owner next action:** replace only Cells **1, 3 and 4** with
+complete linked GitHub code in `NB_ARCHER_OSCAL_MAPPER_V2`, set
+`("CATALOG",)` and run existing Cells **1 through 7 in order** in
+`PREVIEW` only. Cell 2 must refresh lookups. Do not run Source
+One SSP COMMIT again or either earlier committed Catalog batch.
+After owner-run PREVIEW, check against previous approved four Topic/
+Section properties: 11,982 planned DIM updates, zero FACT changes.
+No additional QA runner or COMMIT until normal PREVIEW succeeds.
+
+**GitHub verification:** [Actions 38916790804](https://github.com/theenduser009/Oscal-mapping-strategy/actions/runs/38916790804):
+5/5 new focused tests PASS, generated notebook check PASS;
+full suite historical 28 FAIL / 88 ERROR with zero new failing identities.
+Source One 168 mapping rows and Source Two candidate 67 rows both unchanged.
+**Code verified in GitHub; new integrated code NOT yet run in Snowflake.**
+
+[Latest dated OSCAL source-of-truth checkpoint](https://github.com/theenduser009/Oscal-mapping-strategy/blob/simplify-metadata-boundary/docs/checkpoints/2026-10-16-source-two-catalog-shared-v17-joined-transform-compatibility-restored.md).
+
+---
+
 ## Source One SSP physical COMMIT accepted (2026-10-16)
 
 **New owner Snowflake evidence:** The earlier, exact-count guarded Cell 7
