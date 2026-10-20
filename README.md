@@ -1,5 +1,21 @@
 # OSCAL — public copy-and-run workbench
 
+## Next — October 20, 2026: owner Procedure mapping correctness (one read-only run)
+
+**New accepted DEV readback:** The owner's single-row persisted Catalog Control DIM check returned **10,422** native Control nodes, **0** invalid `archer-content-id` prop identities, **0** duplicate Catalog+Standard identities, **38,311** in-scope distinct global Standard→Procedure pairs, and **410,598** distinct *Catalog-scoped* Standard→Procedure associations anchored to **6,294 native controls across 24 Catalogs**. These results confirm persisted target identity only. **No new Procedure link or 104-row mapping COMMIT was performed by that query.**
+
+**One next step:** [Open Source Two owner-level Procedure vs Standard-closure read-only SQL](sql/source-two-catalog-owner-procedure-versus-standard-closure-2026-10-20.sql). Paste the whole query into a Snowflake DEV worksheet; return its **five aggregate result rows**, scrolling horizontally to show `PAIRS_PRESENT_IN_BOTH`, `PAIRS_ONLY_EXPLICIT_OWNER`, and `PAIRS_ONLY_STANDARD_IMPLIED`.
+
+**Why this one matters:** the original four Catalog worksheet field occurrences are direct owner-level `RELATED_CONTROL_PROCEDURES` (303,983 reference occurrences). The separate, newly verified Standard-origin Archer CR30705 relationship generates **1,974,800 owner–Standard–Procedure association instances** when joined through *direct owner `CONTROL_STANDARDS`*. An exact pair-level comparison—not a row-count comparison—must determine whether those two distinct Archer relationship families agree for each owner before mapping an owner-level field to native control links. Do not fan out any Procedures to all Standards in the same Source/Group.
+
+The query is **SELECT only**, reads no OSCAL DIM/FACT, emits no original IDs or confidential values, and does not run Cells 1–7. It was source-reviewed and GitHub read-back verified, **but has not been owner-executed**. The prior 38,460 CR/RR parity, 38,311 direct-owner scope, and 10,422 persisted control checks are **complete**; do not rerun them unless inputs changed.
+
+In private `Oscal-mapping-strategy`, an **eight-row REVIEW-ONLY relationship matrix** now explicitly separates the four owner Procedure fields from Standard CR30705/Procedure RR30704 and the independent Procedure CR3088/Standard RR2497 family. It is NOT the 104-row runtime CSV and changes no mapping status or warehouse data. Native links need a real resolvable URI/resource; optional custom OSCAL properties require a verified Archer stable field GUID and namespace per the October 20 meeting direction. Neither option has yet been approved as an active payload.
+
+The earlier "persisted control anchor" step below is **completed** and is superseded as an instruction.
+
+---
+
 ## Latest — October 20, 2026: native Catalog control anchor check (one run)
 
 **Owner DEV read-only results from the prior Source Two scope query are accepted:** **38,311 distinct** Standard→Procedure pairs are attached to Standards directly referenced at Source, Topic, Section, or Sub-Section. **149** distinct pairs are outside that owner scope; the two counts reconcile to the previously bidirectionally verified **38,460** full-RAW pairs. All **39,897** direct Source Two Standard reference occurrences had valid positive numeric IDs; there are **1,606** distinct Standards in this scope, of which **640** have Procedure pairs, spanning **2,627** distinct Procedures. The **1,974,800** owner–Standard–Procedure association instances are NOT new native OSCAL links; do not fan out owner-level references.
