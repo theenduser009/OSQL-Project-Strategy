@@ -1,5 +1,21 @@
 # OSCAL — public copy-and-run workbench
 
+## Latest — October 20, 2026: native Catalog control anchor check (one run)
+
+**Owner DEV read-only results from the prior Source Two scope query are accepted:** **38,311 distinct** Standard→Procedure pairs are attached to Standards directly referenced at Source, Topic, Section, or Sub-Section. **149** distinct pairs are outside that owner scope; the two counts reconcile to the previously bidirectionally verified **38,460** full-RAW pairs. All **39,897** direct Source Two Standard reference occurrences had valid positive numeric IDs; there are **1,606** distinct Standards in this scope, of which **640** have Procedure pairs, spanning **2,627** distinct Procedures. The **1,974,800** owner–Standard–Procedure association instances are NOT new native OSCAL links; do not fan out owner-level references.
+
+**One next run, SQL worksheet in Snowflake DEV:** [Open the full native Catalog control anchor diagnostic](sql/source-two-catalog-persisted-control-procedure-anchor-readonly-2026-10-20.sql). Paste/run the whole SELECT. Return a screenshot of its **single result row**, scrolling horizontally to include all columns.
+
+This checks whether the verified source-side Standard–Procedure pairs actually belong to a **persisted** native Catalog Control DIM node, using the exact current private seven-cell identity convention (`Catalog SOURCE_RECORD_ID` + `controls[]` node + `props[name='archer-content-id']`). It reports valid and invalid node identity properties, duplicate logical Catalog+Standard keys, distinct global pairs supported by persisted controls, and per-Catalog associations. **This is not a request to rerun notebook Cells 1–7, COMMIT, or repeat the accepted 38,460 / 38,311 read-only tests.**
+
+NIST OSCAL 1.2.3 does **not** permit invented procedure `link.href` values: a native link needs a valid URI target, and an internal `#uuid` back-matter target needs an actual back-matter resource with linked/embedded content (rlink/base64). Verify an approved real reference or select a legitimate extension representation; do not invent it or clone 1,974,800 owner associations into DIM.
+
+**Provenance:** The link-anchor SQL is published and GitHub read-back verified, but **has not run in Snowflake**. The owner screenshots establish only **current source-to-target reference scope**. The 104-row private cumulative CATALOG candidate is evidenced as prior **PREVIEW** (+124/+124 prospective inserts), not a newly committed revision. Existing private mapping CSV, loader, registry, deterministic keys, and target DIM/FACT were untouched.
+
+The earlier owner-scope and CR/RR parity runs in sections below are **completed checks, not the next step**. Keep historical results but do not repeat accepted unchanged work.
+
+---
+
 ## Next — October 20, 2026: which validated Procedure pairs belong in Source Two CATALOG?
 
 The owner's DEV read-only CR/RR parity screenshot **verified 38,460/38,460 Control Standard → Control Procedure pairs** between `Level41 CR 30705` and `Level39 RR 30704` with zero pair-only discrepancies, invalid IDs, missing RAW targets, or duplicate target IDs. The **555** Procedure CR3088 pairs are all contained in the first family. Standard RR2497 is **not resolvable** from `ARCHER_META_FIELD` using (LevelId41, FieldId2497), so its zero-item output and 555 apparent CR-only pairs **cannot** be treated as a failed reverse match. The second Archer family stays on hold.
