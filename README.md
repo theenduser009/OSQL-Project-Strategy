@@ -1,5 +1,21 @@
 # OSCAL — public copy-and-run workbench
 
+## Next — October 20, 2026: which validated Procedure pairs belong in Source Two CATALOG?
+
+The owner's DEV read-only CR/RR parity screenshot **verified 38,460/38,460 Control Standard → Control Procedure pairs** between `Level41 CR 30705` and `Level39 RR 30704` with zero pair-only discrepancies, invalid IDs, missing RAW targets, or duplicate target IDs. The **555** Procedure CR3088 pairs are all contained in the first family. Standard RR2497 is **not resolvable** from `ARCHER_META_FIELD` using (LevelId41, FieldId2497), so its zero-item output and 555 apparent CR-only pairs **cannot** be treated as a failed reverse match. The second Archer family stays on hold.
+
+**One next step:** [Open the read-only Source Two Catalog direct-owner scope SQL](sql/source-two-catalog-standard-procedure-scope-readonly-2026-10-20.sql). Run that whole query once in a **Snowflake DEV SQL worksheet**. It returns only **six aggregate rows**, grouped by Source, Topic, Section, Sub-Section, ALL Source Two direct owners, and Standards outside that owner scope.
+
+The query uses the four approved direct `CONTROL_STANDARDS` owner fields from Source Two and the independently verified target Standard CR `RELATED_CONTROL_PROCEDURES`. It reports how much of the confirmed 38,460-pair relationship can possibly attach to actual selected native Catalog controls, **without** joining every Section/Group Procedure to every control. It avoids returning any original ContentId or source business text.
+
+Send one screenshot with **all six rows and their columns** (horizontal scroll as needed). Per-level counts can overlap and must not be added as distinct pairs. All-scope + outside-scope distinct pair counts should total 38,460 if the RAW snapshot is unchanged. This is only a scoped mapping candidate gate: it does not prove final per-Catalog graph identity, a valid OSCAL `link.href`, native link representation, or COMMIT.
+
+**Release boundary:** The file is GitHub-published and source reviewed for SELECT-only intent, but has **not run in owner Snowflake**. No private seven-cell mapper changes, runtime CSV changes, DIM/FACT writes, link additions or new COMMIT are claimed. Source Two 104-row catalog candidate remains separate prior **PREVIEW** evidence only. Standalone diagnostics remain in this **public** OSQL workbench; executable mapper/CSV stays private.
+
+The previous Standard/Procedure parity-run instructions below are **completed evidence**. Do not rerun them unless underlying RAW or metadata has changed.
+
+---
+
 ## Current — October 20, 2026: verify Standard ↔ Procedure CR/RR pair parity
 
 **One next step:** [Open the complete read-only Snowflake SQL](sql/source-two-control-standard-procedure-cr-rr-parity-readonly-2026-10-20.sql). Copy/paste the entire SQL into a **Snowflake DEV SQL worksheet**, run its final SELECT, and return screenshots of **all four result rows** (scroll horizontally to capture all result columns). No notebook Cells 1–7 need to be rerun.
