@@ -1,5 +1,24 @@
 # OSCAL — public copy-and-run workbench
 
+## Current — October 20, 2026: verify Standard ↔ Procedure CR/RR pair parity
+
+**One next step:** [Open the complete read-only Snowflake SQL](sql/source-two-control-standard-procedure-cr-rr-parity-readonly-2026-10-20.sql). Copy/paste the entire SQL into a **Snowflake DEV SQL worksheet**, run its final SELECT, and return screenshots of **all four result rows** (scroll horizontally to capture all result columns). No notebook Cells 1–7 need to be rerun.
+
+This compares **two distinct original cross-reference / related-record pairs** verified from the owner's Archer relationship-definition screenshots:
+
+- Control Standards **CR 30705** ↔ Control Procedures **RR 30704**.
+- Control Procedures **CR 3088** ↔ Control Standards **RR 2497**.
+
+The SQL derives the exact source `SQL_FIELD_NAME` from Archer metadata using **(LevelId, FieldId)**, resolves actual ContentIds in both RAW tables, checks field shapes/target integrity, measures originating-CR versus related-RR pair discrepancies **separately for each definition**, and measures cross-family overlap. It returns aggregates only—no business values or source IDs. This run inspects **all Control Standards and Control Procedures RAW rows**, rather than the earlier Source Two subset of 2,627 referenced procedures; do not expect subset counts to equal full-table counts.
+
+**Evidence status:** The file is source-reviewed and GitHub read-back verified, but **not yet executed in Snowflake**. No native procedure links, cumulative mapping CSV, seven-cell mapper, or target DIM/FACT were modified. The current **104-row** private Source Two candidate has a prior accepted **PREVIEW** (44,669 proposed DIM / 44,521 proposed FACT, +124/+124 inserts, no writes); a newer 104-row COMMIT/readback is **not established** by the later read-only source screenshots. Historical 103-row and 30,566-DIM change COMMIT checkpoints concern earlier releases and do not prove the new relationship mapping.
+
+**GitHub placement rule:** Standalone public-safe read-only SQL and diagnostic cells: **this public repository**. Authoritative executable notebook Cells 1–7, active CSV changes, implementation evidence/checkpoints: private [Oscal-mapping-strategy](https://github.com/theenduser009/Oscal-mapping-strategy) work branch. Never place client business records, screenshots, mapping runtime CSV or private notebook engine content in this public repo.
+
+This step supersedes the **October 16 next-step instructions below**. They remain historical; do not repeat accepted loads or Back Matter profiling solely because they are still documented.
+
+---
+
 ## Current — October 16, 2026: Source Two CATALOG Back Matter
 
 The previous 30,566-DIM-update Catalog batch is **owner COMMITTED_AND_VERIFIED through existing Cell 7**. Do not rerun it, its old QA, or the separate commit-approval guard. The daily ETL stays on the same metadata-driven seven-cell pipeline, with dynamic pre-write validation and the same Cell 7 commit path.
