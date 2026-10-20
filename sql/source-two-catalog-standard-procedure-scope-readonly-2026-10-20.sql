@@ -134,10 +134,13 @@ out_of_scope AS (
            COUNT(*) AS DISTINCT_STANDARD_PROCEDURE_PAIRS,
            0 AS OWNER_STANDARD_PROCEDURE_PAIR_INSTANCES
     FROM out_of_scope_pairs
+),
+result_rows AS (
+    SELECT * FROM by_level
+    UNION ALL SELECT * FROM all_scoped
+    UNION ALL SELECT * FROM out_of_scope
 )
-SELECT * FROM by_level
-UNION ALL SELECT * FROM all_scoped
-UNION ALL SELECT * FROM out_of_scope
+SELECT * FROM result_rows
 ORDER BY
     CASE SOURCE_LEVEL
         WHEN 'Source' THEN 1 WHEN 'Topic' THEN 2
