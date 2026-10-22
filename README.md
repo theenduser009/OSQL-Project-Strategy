@@ -1,30 +1,44 @@
 # OSCAL Copy-and-Run Workbench
 
-**Current check:** [Source Two sprint PREVIEW value audit](qa/source_two_sprint_preview_value_qa.py).
+**Current owner step: [Approved DEV commit — Python Cell 9](run/09_APPROVED_DEV_COMMIT.py).**
 
-This is Python for the same still-active Snowflake DEV notebook session after
-the seven-cell mapper has completed PREVIEW. It compares the new mapped property
-values with the retained source snapshots and reports Catalog statement omissions.
+The owner approved this exact scope after the DEV preview and value audit passed:
+6,294 Catalog DIM updates, 128,063 child Assessment Results DIM inserts and
+96,081 child FACT inserts, with no deletions/retirements.
 
-## Run once from Git
+## Run once in the same active Snowflake session
 
-1. Open the current Python audit and copy its entire contents.
-2. Add a separate Python Cell 8 after the seven mapper cells and paste the audit there.
-3. Run only Cell 8 in the same active session. Leave Cells 1–7 unchanged;
-   do not restart the session or rerun the mapper just to run this check.
-4. Copy the audit summary and any reported exceptions back to the private mapping chat.
+1. Open the approved commit script and copy the **whole file**.
+2. Add a new **Python Cell 9** after your existing mapper and QA cells.
+3. Paste the code and run **only Cell 9 once**, in that same still-active session.
+4. Return the printed SOURCE_TWO_SPRINT_COMMIT_REPORT in the private mapping chat.
 
-Cell 8 is a separate QA step; your maintained mapper still has seven runtime cells.
-The audit reads the completed candidate and cached source inputs. It does not
-rebuild the graph, read current RAW or persisted target tables, call the loader,
-change the mappings or commit target changes. No downloads or uploads are needed.
+**This script WRITES the exact approved DEV changes.** Leave Cells 1–8 unchanged.
+No downloads/uploads, replacement of mapper cells, or further approval is needed
+for this already-approved scope. Successful completion must report
+COMMITTED_AND_VERIFIED; publication/tests alone do not establish warehouse success.
 
-If the session has restarted, the retained preview objects will be missing and
-the script must stop. Do not treat a partial or missing-snapshot result as a pass.
+It calls the private mapper already loaded in the notebook. The seven runtime
+cells, full mapping CSVs and registry definitions stay in the private project.
+This public file is the one-time approved execution adapter, not the mapper engine.
+It retains the existing mandatory approval guards and refuses changed
+fingerprints, deltas or DEV destinations. Original preview globals stay intact.
 
-The previously completed [Catalog group key-control QA](sql/CATALOG_GROUP_KEY_CONTROL_QA.sql)
-remains available for reference; do not repeat its accepted checks for this batch.
+Transactions are per route. On ANY error, stop and share the retained report;
+a prior route may have committed. Do not blindly rerun this script or all routes.
+The script blocks retry after a previous attempted commit in the same session.
+A restarted session lacks the required frozen preview and QA evidence and must stop.
 
-Mapper cells, mapping CSVs and registry definitions remain private. This public
-repository contains QA tools only, with matching evidence in the private project
-checkpoint. Do not post source record values, screenshots or credentials here.
+The exact adapter passed seven focused synthetic cloud tests privately. Public
+delivery verification compiles and checks the artifact hash without running it.
+No warehouse operation is executed by GitHub Actions.
+
+## Completed/reference checks
+
+- [Source Two PREVIEW value audit — Python Cell 8](qa/source_two_sprint_preview_value_qa.py)
+- [Catalog group key-control SQL QA](sql/CATALOG_GROUP_KEY_CONTROL_QA.sql)
+
+Those owner checks are already accepted for this sprint; do not rerun them merely
+to find the next step. Raw source records, screenshots, business values and
+credentials must not be published here. Keep runtime/CSV/registry private and
+record matching checkpoints in the private project.
