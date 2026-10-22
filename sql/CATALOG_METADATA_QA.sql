@@ -1,10 +1,11 @@
 -- CATALOG METADATA QA | DEV | READ-ONLY | 2026-10-22
--- Copy into Snowflake worksheet. Change ONLY the two table paths below.
--- Paths use DATABASE.SCHEMA.TABLE; no internal object names stored in public Git.
--- This checks persisted DIM, not uncommitted mapper PREVIEW.
-SET QA_SOURCE_RAW = 'REPLACE_DATABASE.SCHEMA.SOURCE_RAW_TABLE';
-SET QA_CATALOG_DIM = 'REPLACE_DATABASE.SCHEMA.CATALOG_DIM_TABLE';
-
+-- Copy the COMPLETE query into a Snowflake DEV SQL worksheet and run it once.
+-- Fully qualified source and persisted target paths are included below.
+-- This is one SELECT query: no session SET, table writes, DDL or notebook rerun.
+-- Compares persisted metadata, not uncommitted mapper PREVIEW.
+-- Returns 3 FIELD_SUMMARY rows and up to 15 pseudonymous matched-ID statuses.
+-- Business text and original source IDs are compared internally, not printed.
+--
 WITH fields AS (
   SELECT column1::VARCHAR AS source_field, column2::VARCHAR AS oscal_member
   FROM VALUES ('SOURCE_NAME','title'),
@@ -15,16 +16,17 @@ source_ids AS (
   SELECT TO_VARCHAR(CONTENT_ID) AS sid,
          COUNT(DISTINCT COALESCE(TO_JSON(CURATED_JSON),'<SQL_NULL>')) AS payload_versions,
          ANY_VALUE(CURATED_JSON) AS source_json
-  FROM IDENTIFIER($QA_SOURCE_RAW)
+  FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SOURCE_RAW
   WHERE CONTENT_ID IS NOT NULL
+    AND LENGTH(TRIM(TO_VARCHAR(CONTENT_ID)))>0
   GROUP BY TO_VARCHAR(CONTENT_ID)
 ),
 target_ids AS (
   SELECT TO_VARCHAR(SOURCE_RECORD_ID) AS sid,
          COUNT(*) AS target_rows, ANY_VALUE(METADATA_JSON) AS target_json
-  FROM IDENTIFIER($QA_CATALOG_DIM)
+  FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_CATALOG_ELEMENT
   WHERE UPPER(SOURCE_SYSTEM_NAME)='ARCHER'
-    AND UPPER(SOURCE_TABLE_NAME)=UPPER(SPLIT_PART($QA_SOURCE_RAW,'.',3))
+    AND UPPER(SOURCE_TABLE_NAME)='ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SOURCE_RAW'
     AND LOWER(ELEMENT_TYPE)='metadata'
     AND SOURCE_RECORD_ID IS NOT NULL
   GROUP BY TO_VARCHAR(SOURCE_RECORD_ID)
@@ -49,7 +51,7 @@ checks AS (
          CASE
            WHEN NOT source_exists THEN 'TARGET_ONLY_ID'
            WHEN payload_versions>1 THEN 'RAW_VERSIONS_AMBIGUOUS'
-           WHEN TYPEOF(source_json)<>'OBJECT' THEN 'RAW_JSON_WRONG_SHAPE'
+           WHEN source_json IS NULL OR TYPEOF(source_json)<>'OBJECT' THEN 'RAW_JSON_WRONG_SHAPE'
            WHEN source_value IS NULL OR IS_NULL_VALUE(source_value)
              THEN 'SOURCE_UNPOPULATED'
            WHEN TYPEOF(source_value)<>'VARCHAR'
@@ -57,7 +59,7 @@ checks AS (
            WHEN TRIM(source_value::VARCHAR)='' THEN 'SOURCE_UNPOPULATED'
            WHEN NOT target_exists THEN 'TARGET_METADATA_MISSING'
            WHEN target_rows<>1 THEN 'TARGET_METADATA_DUPLICATE'
-           WHEN TYPEOF(target_json)<>'OBJECT' THEN 'TARGET_JSON_WRONG_SHAPE'
+           WHEN target_json IS NULL OR TYPEOF(target_json)<>'OBJECT' THEN 'TARGET_JSON_WRONG_SHAPE'
            WHEN target_value IS NULL OR IS_NULL_VALUE(target_value)
              THEN 'TARGET_VALUE_MISSING'
            WHEN TYPEOF(target_value)<>'VARCHAR'
@@ -69,21 +71,30 @@ checks AS (
   FROM values_by_field
 ),
 field_counts AS (
-  SELECT source_field,oscal_member,
-         COUNT_IF(source_exists) AS source_ids,
-         COUNT_IF(target_exists) AS persisted_target_ids,
-         COUNT_IF(result='EXACT_MATCH') AS exact_matches,
-         COUNT_IF(result='SOURCE_UNPOPULATED') AS source_without_value,
-         COUNT_IF(result='RAW_VERSIONS_AMBIGUOUS') AS ambiguous_raw_ids,
-         COUNT_IF(result IN ('RAW_JSON_WRONG_SHAPE','SOURCE_VALUE_WRONG_SHAPE'))
+  -- Drive from the three field definitions so an empty warehouse still returns
+  -- three numeric-zero summaries. Inspect source_ids/target_ids before accepting.
+  SELECT f.source_field,f.oscal_member,
+         COALESCE(COUNT_IF(c.source_exists),0) AS source_ids,
+         COALESCE(COUNT_IF(c.target_exists),0) AS persisted_target_ids,
+         COALESCE(COUNT_IF(c.result='EXACT_MATCH'),0) AS exact_matches,
+         COALESCE(COUNT_IF(c.result='SOURCE_UNPOPULATED'),0) AS source_without_value,
+         COALESCE(COUNT_IF(c.result='RAW_VERSIONS_AMBIGUOUS'),0) AS ambiguous_raw_ids,
+         COALESCE(COUNT_IF(c.result IN (
+           'RAW_JSON_WRONG_SHAPE','SOURCE_VALUE_WRONG_SHAPE')),0)
            AS invalid_source_shape,
-         COUNT_IF(result='TARGET_METADATA_MISSING') AS missing_target_metadata,
-         COUNT_IF(result='TARGET_VALUE_MISSING') AS missing_target_value,
-         COUNT_IF(result='VALUE_MISMATCH') AS wrong_target_value,
-         COUNT_IF(result IN ('TARGET_METADATA_DUPLICATE','TARGET_JSON_WRONG_SHAPE',
-                             'TARGET_VALUE_WRONG_SHAPE')) AS target_shape_or_dup,
-         COUNT_IF(result='TARGET_ONLY_ID') AS target_only_ids
-  FROM checks GROUP BY source_field,oscal_member
+         COALESCE(COUNT_IF(c.result='TARGET_METADATA_MISSING'),0)
+           AS missing_target_metadata,
+         COALESCE(COUNT_IF(c.result='TARGET_VALUE_MISSING'),0)
+           AS missing_target_value,
+         COALESCE(COUNT_IF(c.result='VALUE_MISMATCH'),0) AS wrong_target_value,
+         COALESCE(COUNT_IF(c.result IN (
+           'TARGET_METADATA_DUPLICATE','TARGET_JSON_WRONG_SHAPE',
+           'TARGET_VALUE_WRONG_SHAPE')),0) AS target_shape_or_dup,
+         COALESCE(COUNT_IF(c.result='TARGET_ONLY_ID'),0) AS target_only_ids
+  FROM fields f
+  LEFT JOIN checks c
+    ON c.source_field=f.source_field AND c.oscal_member=f.oscal_member
+  GROUP BY f.source_field,f.oscal_member
 ),
 sample_ids AS (
   SELECT sid,LEFT(SHA2(sid,256),12) AS sample_key,
@@ -115,12 +126,13 @@ UNION ALL
 SELECT 1,'MATCHED_SAMPLE',NULL::VARCHAR,NULL::VARCHAR,
        NULL::NUMBER,NULL::NUMBER,NULL::NUMBER,NULL::NUMBER,
        NULL::NUMBER,NULL::NUMBER,NULL::NUMBER,NULL::NUMBER,
-       NULL::NUMBER,NULL::NUMBER,
+       NULL::NUMBER,NULL::NUMBER,NULL::NUMBER,
        sample_key,name_result,version_result,description_result,sample_rank
 FROM samples
 ORDER BY sort_key,source_field,sample_rank;
 
 -- Expected: 3 field summary rows and up to 15 matched-ID status samples.
+-- Zero SOURCE_IDS/TARGET_IDS means no input/target records; it is not QA PASS.
 -- Source without data is not a mapping failure. An exact mismatch can mean
 -- current RAW is newer than the stored release. A sample_key is pseudonymous.
 -- Do not use this result as evidence that the latest PREVIEW was committed.

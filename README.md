@@ -1,11 +1,18 @@
 # OSCAL Copy-and-Run Workbench
 
-Only current owner-run diagnostics live here. Obsolete notebooks, SQL scripts, and previous meeting documents have been removed from the working tree.
+**Current query:** [Catalog metadata three-field QA](sql/CATALOG_METADATA_QA.sql).
 
-**Start here:** [Catalog metadata three-field QA](sql/CATALOG_METADATA_QA.sql).
+Copy the complete query into a Snowflake DEV SQL worksheet and run it once.
+The source RAW and persisted Catalog DIM paths are fully qualified; no table
+placeholders or session variables need to be filled in.
 
-Copy the SQL into Snowflake DEV, replace the **two table identifiers at the top** with the approved Source RAW and persisted Catalog DIM names, then run the full worksheet. The script does not write database tables. Its checks apply to the currently persisted target, not an uncommitted PREVIEW.
+It compares Source name, version and description with persisted Catalog metadata.
+Return the three `FIELD_SUMMARY` rows. Up to 15 matched-ID status samples are
+pseudonymous, and original identifiers/business text are not printed.
+The query is SELECT-only and does not rerun notebook cells or write tables.
+Current RAW may be newer than the persisted release; this is not acceptance
+of an uncommitted mapper PREVIEW.
 
-Runnable **SQL** goes in `sql/`; runnable **Snowflake notebook snippets** go in `notebooks/`. Executable mapper code, mapping CSVs, evidence and checkpoints remain in the private OSCAL repository.
-
-**Security:** Files deleted from this working tree may remain in earlier public Git commits, forks, clones or caches. This cleanup is not a history purge. Remove or retire the repository separately when public distribution is no longer needed.
+Runnable SQL is in `sql/`. The private OSCAL repository maintains the seven-cell
+mapper, mapping CSVs and evidence. The Kobai folder was removed from this branch
+at the owner's request; earlier Git commits may still contain its previous files.
