@@ -1,0 +1,23 @@
+name: Check preview value audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'qa/source_two_sprint_preview_value_qa.py'
+      - 'tests/test_source_two_sprint_preview_value_qa.py'
+      - '.github/workflows/check-preview-value-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile QA script
+        run: python -m py_compile qa/source_two_sprint_preview_value_qa.py
+      - name: Verify audit with synthetic retained-preview fixtures
+        run: python -m unittest discover -s tests -p 'test_source_two_sprint_preview_value_qa.py' -v

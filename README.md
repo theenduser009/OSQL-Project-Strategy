@@ -1,22 +1,31 @@
 # OSCAL Copy-and-Run Workbench
 
-**Current query:** [Catalog group key-control value QA](sql/CATALOG_GROUP_KEY_CONTROL_QA.sql).
+**Current check:** [Source Two sprint PREVIEW value audit](qa/source_two_sprint_preview_value_qa.py).
 
-Copy the complete query into one Snowflake DEV SQL worksheet and run it once.
-All source RAW and persisted Catalog DIM paths are fully qualified.
+This is Python for the same still-active Snowflake DEV notebook session after
+the seven-cell mapper has completed PREVIEW. It compares the new mapped property
+values with the retained source snapshots and reports Catalog statement omissions.
 
-This checks the existing RELATED_TO_KEY_CONTROLS property at Topic, Section and
-Sub-Section owners using original child identities. Return the three
-`FIELD_SUMMARY` rows, including headers and every count column. Output is
-aggregate counts only. The query is one read-only SELECT.
+## Run once from Git
 
-Zero is populated data. Empty source is distinguished from a missing required
-property; decimal/double rendering is flagged for review rather than called an
-exact match. Review all exception columns and observed source/target populations.
-Current RAW may be newer than persisted DIM.
+1. Open the current Python audit and copy its entire contents.
+2. Temporarily replace the code in your existing Cell 7 with that audit.
+3. Run only that cell in the same session. Keep the retained PREVIEW data;
+   do not restart the session or rerun the mapper just to run this check.
+4. Copy the audit summary and any reported exceptions back to the mapping chat.
+5. Restore the normal published Cell 7 code afterward, without running it again.
 
-The previous completed Catalog metadata QA file was removed from current main
-at the owner's request; its history and accepted results remain in the private
-project checkpoint. Mapper cells, mapping CSVs and registry changes stay in the
-private OSCAL repository. QA/validation copy-and-run scripts belong here, with
-a corresponding private checkpoint. Do not publish source records or credentials.
+This is a temporary QA step; your maintained mapper still has seven cells.
+The audit reads the completed candidate and cached source inputs. It does not
+rebuild the graph, read current RAW or persisted target tables, call the loader,
+change the mappings or commit target changes. No downloads or uploads are needed.
+
+If the session has restarted, the retained preview objects will be missing and
+the script must stop. Do not treat a partial or missing-snapshot result as a pass.
+
+The previously completed [Catalog group key-control QA](sql/CATALOG_GROUP_KEY_CONTROL_QA.sql)
+remains available for reference; do not repeat its accepted checks for this batch.
+
+Mapper cells, mapping CSVs and registry definitions remain private. This public
+repository contains QA tools only, with matching evidence in the private project
+checkpoint. Do not post source record values, screenshots or credentials here.
