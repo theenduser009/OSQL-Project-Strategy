@@ -1,6 +1,6 @@
 # Source Two sprint: run once AFTER successful Cell 7 PREVIEW in the same session.
-# Temporarily paste into existing Cell 7 after PREVIEW; run only this audit,
-# then restore the published Cell 7 code without running it again.
+# Paste into a separate Python QA cell (Cell 8) after successful Cell 7 PREVIEW.
+# Leave the seven mapper cells unchanged; run only this QA cell.
 # Reads retained candidate/cached inputs only. No pipeline rerun, RAW/target
 # queries, loader calls, temporary warehouse tables or target writes.
 # Output is counts plus at most five existing IDs for missing statements.
