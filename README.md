@@ -1,5 +1,23 @@
 # OSCAL Copy-and-Run Workbench
 
+## Persistent daily deployment verification
+
+The private project now has a durable external-file deployment candidate:
+seven matched runtime cells, four CSV inputs and a Git-importable notebook.
+Its cloud checks passed; actual Snowflake installation and scheduled daily
+execution are not established by those filesystem checks.
+
+[Package verifier](qa/verify_source_two_daily_release.py) is a read-only
+deployment/CI utility for an operator who already has the private deployment
+directory. It validates pinned files and uses the actual extracted CSV reader.
+**Do not paste this CLI utility into a Snowflake notebook cell.**
+It does not download private code, install files, query Snowflake or write data.
+Runtime cells, CSVs, registry and deployment instructions remain private.
+
+The completed historical DEV commit below is not a recurring daily job and
+its fixed approved counts must not authorize future deltas.
+
+
 **Completed: the approved Source Two DEV commit was run by the owner and reported COMMITTED_AND_VERIFIED for all four routes, with storage verification passed and zero retirements. No repeat run is needed.**
 
 The matched evidence and detailed receipt are recorded in the private project.
