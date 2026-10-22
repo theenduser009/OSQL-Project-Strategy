@@ -1,18 +1,22 @@
 # OSCAL Copy-and-Run Workbench
 
-**Current query:** [Catalog metadata three-field QA](sql/CATALOG_METADATA_QA.sql).
+**Current query:** [Catalog group key-control value QA](sql/CATALOG_GROUP_KEY_CONTROL_QA.sql).
 
-Copy the complete query into a Snowflake DEV SQL worksheet and run it once.
-The source RAW and persisted Catalog DIM paths are fully qualified; no table
-placeholders or session variables need to be filled in.
+Copy the complete query into one Snowflake DEV SQL worksheet and run it once.
+All source RAW and persisted Catalog DIM paths are fully qualified.
 
-It compares Source name, version and description with persisted Catalog metadata.
-Return the three `FIELD_SUMMARY` rows. Up to 15 matched-ID status samples are
-pseudonymous, and original identifiers/business text are not printed.
-The query is SELECT-only and does not rerun notebook cells or write tables.
-Current RAW may be newer than the persisted release; this is not acceptance
-of an uncommitted mapper PREVIEW.
+This checks the existing RELATED_TO_KEY_CONTROLS property at Topic, Section and
+Sub-Section owners using original child identities. Return the three
+`FIELD_SUMMARY` rows, including headers and every count column. Output is
+aggregate counts only. The query is one read-only SELECT.
 
-Runnable SQL is in `sql/`. The private OSCAL repository maintains the seven-cell
-mapper, mapping CSVs and evidence. The Kobai folder was removed from this branch
-at the owner's request; earlier Git commits may still contain its previous files.
+Zero is populated data. Empty source is distinguished from a missing required
+property; decimal/double rendering is flagged for review rather than called an
+exact match. Review all exception columns and observed source/target populations.
+Current RAW may be newer than persisted DIM.
+
+The previous completed Catalog metadata QA file was removed from current main
+at the owner's request; its history and accepted results remain in the private
+project checkpoint. Mapper cells, mapping CSVs and registry changes stay in the
+private OSCAL repository. QA/validation copy-and-run scripts belong here, with
+a corresponding private checkpoint. Do not publish source records or credentials.
