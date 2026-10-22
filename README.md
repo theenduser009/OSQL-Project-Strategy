@@ -1,12 +1,19 @@
 # OSCAL Copy-and-Run Workbench
 
-**Current owner step: [Approved DEV commit — Python Cell 9](run/09_APPROVED_DEV_COMMIT.py).**
+**Completed: the approved Source Two DEV commit was run by the owner and reported COMMITTED_AND_VERIFIED for all four routes, with storage verification passed and zero retirements. No repeat run is needed.**
+
+The matched evidence and detailed receipt are recorded in the private project.
+The scripts below are retained as reference for that completed candidate.
+A new candidate requires a new preview and approval; do not reuse this fixed
+approval as permission for another warehouse delta.
+
+**Completed one-time delivery: [Approved DEV commit — Python Cell 9](run/09_APPROVED_DEV_COMMIT.py).**
 
 The owner approved this exact scope after the DEV preview and value audit passed:
 6,294 Catalog DIM updates, 128,063 child Assessment Results DIM inserts and
 96,081 child FACT inserts, with no deletions/retirements.
 
-## Run once in the same active Snowflake session
+## Historical delivery steps — already completed
 
 1. Open the approved commit script and copy the **whole file**.
 2. Add a new **Python Cell 9** after your existing mapper and QA cells.
