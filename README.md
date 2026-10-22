@@ -1,5 +1,16 @@
 # OSCAL — public copy-and-run workbench
 
+## Current next step — October 22, 2026: Archer field GUID check
+
+The owner completed the Source Two relationship tests on October 20. The latest read-only result established 303,983 explicit owner-to-Procedure pairs, including 192,304 also explained by directly referenced Standards, 111,679 owner-only, and 151 Standard-derived-only. These two Archer relationships must be preserved separately; do not map all owner Procedures to each native Catalog Control.
+
+**One next action:** [Run the Archer field GUID metadata SELECT](sql/source-two-procedure-reference-archer-field-guid-gate-readonly-2026-10-20.sql) once in a Snowflake DEV SQL worksheet. Share its eight aggregated metadata rows, particularly the actual GUID/UUID columns and whether each source field has a nonempty, stable identifier. This script is published and GitHub-readback verified but has **not** been Snowflake-run. It performs no DML/DDL and does not rerun the seven-cell mapper.
+
+Current private Source Two CATALOG runtime is still the 104-row candidate; the newer 104-row changes have PREVIEW evidence but **no new COMMIT/readback**. No active Procedure references are mapped yet. Do not invent `prop.name`, `prop.ns`, or `link.href` values. The older README next-step sections below are historical.
+
+---
+
+
 ## Next — October 20, 2026: owner Procedure mapping correctness (one read-only run)
 
 **New accepted DEV readback:** The owner's single-row persisted Catalog Control DIM check returned **10,422** native Control nodes, **0** invalid `archer-content-id` prop identities, **0** duplicate Catalog+Standard identities, **38,311** in-scope distinct global Standard→Procedure pairs, and **410,598** distinct *Catalog-scoped* Standard→Procedure associations anchored to **6,294 native controls across 24 Catalogs**. These results confirm persisted target identity only. **No new Procedure link or 104-row mapping COMMIT was performed by that query.**
