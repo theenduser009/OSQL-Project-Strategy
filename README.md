@@ -1,41 +1,25 @@
 # OSCAL Copy-and-Run Workbench
 
-## Current action — corrected Source Two eleven-field PREVIEW value QA
+## Current status — eleven-extension QA completed
 
-[Open the current read-only Python audit](qa/source_two_extensions_preview_value_qa.py).
+The owner reported PASS for the corrected frozen-preview audit and supplied
+photographs showing current Catalog and child-field parity. The private
+checkpoint preserves visible counts and distinguishes the owner's reported
+overall result from the uncaptured final footer. No repeat QA or mapper run is
+requested for this accepted cycle.
 
-The owner's four-route DEV PREVIEW passed. The first version of this audit
-incorrectly combined Source and Topic fields sharing the name INFORMATION and
-stopped with a contract mismatch. The corrected audit selects by original field
-and compiled registry owner, then checks the exact target and lookup. No mapper
-cell, mapping CSV or registry change is required. This independent audit checks the
-new eleven extensions against the retained source records and candidate graph,
-including original record ownership, duplicates and values swapped between
-records. It also preserves the earlier child/Procedure/association checks.
-It does not commit data, rebuild the mapper or query current RAW/target tables.
+[Corrected read-only audit — reference](qa/source_two_extensions_preview_value_qa.py).
 
-1. In the SAME still-active Snowflake session that completed PREVIEW, add one
-   temporary Python QA cell after Cell7 (Cell8).
-2. Replace the failed QA code with the entire corrected script and run ONLY
-   that QA cell once.
-   Leave mapper Cells1–7 unchanged.
-3. Return the printed SOURCE_TWO_EXTENSIONS_PREVIEW_VALUE_QA report privately.
-   The temporary QA cell may be removed after keeping its output.
+Its correction separates Source and Topic INFORMATION by original field and
+compiled registry owner, then strictly verifies target, transform, property and
+lookup. All34 focused cloud tests passed, including the complete public audit
+API over all four actual compiled graphs and all33 child field contracts.
+The first contract failure and subsequent successful reproduction/fix remain
+documented privately.
 
-If the required frozen session data is missing, the script stops. Do not replace
-Cell7 or rerun the prior Cell9 commit adapter. No new COMMIT is authorized by
-this audit or by publication. A later write needs a separately reviewed exact
-delta and explicit approval.
-
-The correction passed independent review and cloud checks: sixteen audit tests,
-twelve actual-engine mapping/sample tests and six single-CSV checks, plus both
-artifact verifiers. The new integration regression first reproduced the exact
-contract mismatch against all 93 real compiled Catalog mappings, then passed
-with this correction. A further integration check passed the complete audit API
-against all four actual compiled graph routes and all 33 child mappings.
-Missing or duplicated intended mappings and wrong owner,
-lookup or target paths still fail. These checks
-do not establish a live value-QA PASS until the owner supplies its report.
+Next bulk-mapping work is a separate disabled private candidate. No new
+warehouse COMMIT is authorized; a later write requires a separately reviewed
+exact delta and explicit approval. Keep the completed historical Cell9 closed.
 
 ## Artifact verification — operator tools
 
