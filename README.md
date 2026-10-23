@@ -1,10 +1,10 @@
 # OSCAL Validation and Notebook Examples
 
-## Current same-cell daily runner
+## Current Source Two same-cell daily runner
 
 [Copy Cell 7](notebooks/07_mapper_orchestrator.py) · [Replacement instructions](notebooks/README.md)
 
-The seven-cell runner now reports hash-only diagnostic details when its fixed approved policy does not match the loaded execution metadata. Keep PREVIEW selected while investigating a mismatch; do not change the approval hash or retry COMMIT. This update preserves the write guards and does not resolve a mismatch by accepting live settings. Follow the linked instructions; no additional cell or repeat value QA is required.
+The correction accepts the independently verified historical Assessment Results registry order under the fixed approved DEV policy. It retains the seven-cell daily flow, calculated count approval, validation, readback and blocked retirements. Follow the instructions for COMMIT in the existing Cell 7; a separate preview or QA cell is not a daily dependency.
 
 ## Release validation reference
 

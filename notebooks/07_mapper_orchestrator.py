@@ -10,6 +10,12 @@ OSCAL_APPROVED_DAILY_WRITE_POLICIES = {
         "binding_sha256": "e00677051237c54fd9869c5ec4bbfa0d295afe78c1100f30a25c5ef611098718",
     },
 }
+# Optional finite release variants are authored and verified outside the job.
+OSCAL_APPROVED_DAILY_WRITE_POLICY_VARIANTS = {
+    "e00677051237c54fd9869c5ec4bbfa0d295afe78c1100f30a25c5ef611098718": (
+        "7572b59dcaf6a201692a6cd2eb0b13f5ae92ddb0e0561b9619a13b3abcc29f87",
+    ),
+}
 _OSCAL_DAILY_POLICY_SCHEMA = "oscal-daily-insert-update-policy-v1"
 _OSCAL_DAILY_POLICY_VOLATILE_CONFIG = frozenset({
     "RUN_ID", "EXECUTE_WRITES", "EXPECTED_SOURCE_RECORDS", "LINEAGE_GAP_COUNT",
@@ -214,16 +220,29 @@ def _daily_require_write_policy(source_inputs, mapping_contexts, policy):
     if (type(pinned) is not str or len(pinned) != 64
             or any(char not in "0123456789abcdef" for char in pinned)):
         raise ValueError("DAILY_WRITE_POLICY_PIN_INVALID")
+    variants = OSCAL_APPROVED_DAILY_WRITE_POLICY_VARIANTS
+    if type(variants) is not dict:
+        raise ValueError("DAILY_WRITE_POLICY_VARIANTS_INVALID")
+    alternate = variants.get(pinned, ())
+    if (type(alternate) is not tuple or len(alternate) > 1
+            or any(type(value) is not str or len(value) != 64
+                   or value == pinned
+                   or any(char not in "0123456789abcdef" for char in value)
+                   for value in alternate)):
+        raise ValueError("DAILY_WRITE_POLICY_VARIANTS_INVALID")
     metadata = _daily_write_policy_metadata(source_inputs, mapping_contexts)
     observed = _daily_policy_hash(metadata)
-    if observed != pinned:
+    if observed not in (pinned, *alternate):
         error = ValueError("DAILY_WRITE_POLICY_BINDING_MISMATCH")
         error.daily_write_policy_diagnostics = _daily_policy_mismatch_diagnostics(
             pinned, observed, metadata)
         raise error
-    return {"policy_id": policy["policy_id"], "binding_sha256": pinned,
-            "status": "VALIDATED", "operations": ["INSERT", "UPDATE"],
-            "retirements_allowed": False}
+    result = {"policy_id": policy["policy_id"], "binding_sha256": observed,
+              "status": "VALIDATED", "operations": ["INSERT", "UPDATE"],
+              "retirements_allowed": False}
+    if observed != pinned:
+        result["primary_binding_sha256"] = pinned
+    return result
 
 
 def _daily_preview_approval(preview, config):
@@ -336,9 +355,11 @@ def run_oscal_pipeline(source_inputs, mapping_contexts, load_mode="PREVIEW", dai
             if policy is not None:
                 # The pinned standing policy approves only these same invocation graphs.
                 # It never reuses a previous run or lifts the no-retirement boundary.
-                _daily_require_write_policy(
+                rechecked_policy = _daily_require_write_policy(
                     source_inputs, [graph["context"] for graph in graphs.values()],
                     daily_write_policy)
+                if rechecked_policy["binding_sha256"] != policy["binding_sha256"]:
+                    raise ValueError("DAILY_WRITE_POLICY_VARIANT_CHANGED_DURING_RUN")
                 for group in report["groups"]:
                     active = (group["source"], group["model"])
                     graph = graphs[active]

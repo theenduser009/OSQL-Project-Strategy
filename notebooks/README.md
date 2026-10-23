@@ -1,19 +1,17 @@
-# Same-cell daily runner
+# Source Two same-cell daily runner
 
-## Inspect a fixed-policy mismatch
+Copy the complete [Cell 7 Python file](https://github.com/theenduser009/OSQL-Project-Strategy/blob/main/notebooks/07_mapper_orchestrator.py) over the existing final Python cell of the matched Source Two notebook. Keep Cells 1–6, the persistent CSV and registry unchanged.
 
-1. Replace only the existing final Python cell with the complete [Cell 7 Python file](https://github.com/theenduser009/OSQL-Project-Strategy/blob/main/notebooks/07_mapper_orchestrator.py). Keep Cells 1–6 and the persistent mapping files unchanged.
-2. Keep `OSCAL_LOAD_MODE = "PREVIEW"`. If Cells 1–6 have already completed in the active session, run only Cell 7. After a session restart, run the unchanged Cells 1–6 first, then Cell 7 in PREVIEW.
-3. Save the full printed `OSCAL_PIPELINE_REPORT` privately, including `daily_write_policy_diagnostics` if present.
+For the already approved four-route DEV daily INSERT/UPDATE policy:
 
-Do not select COMMIT while the mismatch is unresolved. Do not add a helper cell, enter counts, change the approved policy hash, or repeat an already accepted value QA.
+1. Set `OSCAL_LOAD_MODE = "COMMIT"` in the replacement Cell 7.
+2. If the matching Cells 1–6 are still loaded in this session, run only Cell 7. After a session restart, run Cells 1–6 once, then Cell 7.
+3. Save the full printed `OSCAL_PIPELINE_REPORT` privately. Successful completion reports `COMMITTED_AND_VERIFIED`.
 
-The diagnostic compares retained release/configuration/registry metadata. It reports hashes and structural key names, without printing their raw values. A mismatching policy still stops before graph construction or any target write; its combined check is not attributed to the last route. If the policy matches, PREVIEW can continue through ordinary no-write validation. This diagnostic update does not establish the cause of a live mismatch.
+Cell 7 validates and previews every route within that invocation before any commit, transfers its calculated counts to the unchanged loader guards, commits the same graphs and verifies readback. No separate preview session, repeat value QA, additional cell, saved receipt or manually entered counts is required. Keep shared `EXECUTE_WRITES = False`.
 
-## Approved daily behavior after the binding is resolved
+The fixed policy accepts exactly the original registry contract and one independently reconstructed historical Assessment Results order variant whose graph/value/identity/lineage and disposable SQL behavior passed the equivalence gate. It cannot learn a new hash from the running notebook, accept a third order, or switch approved variants mid-run. Other route, mapping, registry semantics, identity or destination changes remain blocked. Retirements remain blocked.
 
-The already approved DEV policy permits validated INSERT/UPDATE for its fixed routes, release and destinations. Cell 7 builds and previews every route in the same invocation, transfers calculated counts to the existing loader guards, commits the same graphs and verifies readback. Retirements are blocked. No separate QA cell, retained preview session, saved receipt or manually entered counts is a daily dependency.
+Stop on any error. Do not blindly retry a failed or unknown commit: transactions remain per route, and an earlier route can finish before a later route fails. Keep `OSCAL_LOAD_MODE = "PREVIEW"` when only inspecting a proposed run without writes.
 
-A successful write run reports `COMMITTED_AND_VERIFIED`. Stop on any error; do not blindly retry a failed or unknown commit. Transactions remain per route, so an earlier route can finish before a later route fails.
-
-The policy does not authorize other sources, production destinations or scheduling. Disposable SQL-adapter cloud tests do not establish native Snowflake production readiness.
+This approval covers the fixed Source Two DEV configuration, not other sources, production destinations or scheduling. Cloud SQL-adapter checks do not establish native Snowflake production readiness.
