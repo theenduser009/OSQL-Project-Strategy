@@ -1,0 +1,141 @@
+-- Source One SSP System Implementation: six approved reference fields.
+-- 2026-10-23, read-only Snowflake DEV. No write and no live QA claim.
+-- Verify each source ContentId reference resolves to a *specific* DIM node
+-- under the system-implementation owner through FACT CONTAINS.
+-- Identity rule is from current repo: MD5_BINARY(identity version, source
+-- system/table, package Content ID, SSP, registered path, reference ContentId).
+-- A running-notebook version mismatch must be investigated before calling
+-- a missing hash a broken mapping. This does NOT validate lookup hydration.
+WITH field_contract AS (
+    SELECT column1::STRING AS FIELD_NAME,
+           column2::STRING AS EXPECTED_TYPE
+    FROM VALUES
+      ('SUBSYSTEMS', 'system'),
+      ('SOFTWARE', 'software'),
+      ('HARDWARE', 'hardware'),
+      ('INTERCONNECTIONS', 'interconnection'),
+      ('INTERCONNECTIONS_CONNECTING_INFORMATION_SYSTEM', 'interconnection'),
+      ('SAP_INTAKE_FORM_INTERCONNECTIONS', 'interconnection')
+),
+raw AS (
+    SELECT CONTENT_ID::STRING AS CONTENT_ID,
+           CURATED_JSON,
+           COUNT(*) OVER (PARTITION BY CONTENT_ID::STRING) AS SNAPSHOT_COUNT
+    FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW
+),
+source_fields AS (
+    SELECT r.CONTENT_ID, r.SNAPSHOT_COUNT,
+           f.FIELD_NAME, f.EXPECTED_TYPE,
+           GET(r.CURATED_JSON, f.FIELD_NAME) AS SOURCE_VALUE
+    FROM raw r CROSS JOIN field_contract f
+),
+source_state AS (
+    SELECT *,
+        CASE
+            WHEN SOURCE_VALUE IS NULL THEN 'SOURCE_KEY_ABSENT'
+            WHEN IS_NULL_VALUE(SOURCE_VALUE) THEN 'SOURCE_JSON_NULL_OMITTED'
+            WHEN IS_ARRAY(SOURCE_VALUE) AND ARRAY_SIZE(SOURCE_VALUE) = 0
+                THEN 'SOURCE_EMPTY'
+            WHEN NOT IS_ARRAY(SOURCE_VALUE) THEN 'SOURCE_REFERENCE_SHAPE_REVIEW'
+            ELSE 'SOURCE_POPULATED'
+        END AS SOURCE_STATE
+    FROM source_fields
+),
+expanded_refs AS (
+    SELECT s.CONTENT_ID, s.FIELD_NAME, s.EXPECTED_TYPE,
+           COALESCE(
+             IFF(IS_OBJECT(f.VALUE), f.VALUE:"ContentId"::STRING, NULL),
+             IFF(NOT IS_OBJECT(f.VALUE), f.VALUE::STRING, NULL)
+           ) AS REF_CONTENT_ID
+    FROM source_state s,
+         LATERAL FLATTEN(
+           INPUT => IFF(IS_ARRAY(s.SOURCE_VALUE), s.SOURCE_VALUE, ARRAY_CONSTRUCT())
+         ) f
+    WHERE s.SOURCE_STATE = 'SOURCE_POPULATED'
+),
+distinct_refs AS (
+    SELECT DISTINCT CONTENT_ID, FIELD_NAME, EXPECTED_TYPE, REF_CONTENT_ID
+    FROM expanded_refs
+),
+owned_components AS (
+    SELECT parent.SOURCE_RECORD_ID AS CONTENT_ID,
+           child.PK_OSCAL_SSP_ELEMENT_HASH AS CHILD_HASH,
+           child.METADATA_JSON:"type"::STRING AS COMPONENT_TYPE
+    FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT parent
+    JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.FACT_OSCAL_SSP_DEPENDENCY edge
+      ON edge.FK_SOURCE_ELEMENT_HASH = parent.PK_OSCAL_SSP_ELEMENT_HASH
+     AND edge.DEPENDENCY_TYPE = 'CONTAINS'
+    JOIN RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT child
+      ON child.PK_OSCAL_SSP_ELEMENT_HASH = edge.FK_TARGET_ELEMENT_HASH
+    WHERE parent.ELEMENT_TYPE = 'system-implementation'
+      AND child.ELEMENT_TYPE = 'components'
+      AND parent.SOURCE_SYSTEM_NAME = 'ARCHER'
+      AND parent.SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+      AND child.SOURCE_SYSTEM_NAME = parent.SOURCE_SYSTEM_NAME
+      AND child.SOURCE_TABLE_NAME = parent.SOURCE_TABLE_NAME
+      AND child.SOURCE_RECORD_ID = parent.SOURCE_RECORD_ID
+),
+reference_checks AS (
+    SELECT r.CONTENT_ID, r.FIELD_NAME, r.REF_CONTENT_ID,
+           r.EXPECTED_TYPE, node.CHILD_HASH, node.COMPONENT_TYPE
+    FROM distinct_refs r
+    LEFT JOIN owned_components node
+      ON node.CONTENT_ID = r.CONTENT_ID
+     AND node.CHILD_HASH = MD5_BINARY(CONCAT_WS('|',
+           'v1_registry_path_instance', 'ARCHER',
+           'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW',
+           r.CONTENT_ID, 'SSP',
+           'system-security-plan.system-implementation.components[]',
+           r.REF_CONTENT_ID))
+),
+check_counts AS (
+    SELECT CONTENT_ID, FIELD_NAME,
+           COUNT(*) AS DISTINCT_SOURCE_REFS,
+           COALESCE(COUNT_IF(REF_CONTENT_ID IS NULL
+                    OR LENGTH(TRIM(REF_CONTENT_ID)) = 0), 0) AS BAD_REFERENCE_IDS,
+           COALESCE(COUNT_IF(CHILD_HASH IS NOT NULL), 0) AS TARGET_REF_PRESENT,
+           COALESCE(COUNT_IF(CHILD_HASH IS NOT NULL
+                AND COMPONENT_TYPE = EXPECTED_TYPE), 0) AS TARGET_REF_TYPE_MATCH,
+           COALESCE(COUNT_IF(CHILD_HASH IS NOT NULL
+                AND COMPONENT_TYPE IS DISTINCT FROM EXPECTED_TYPE), 0)
+                AS REF_TYPE_MISMATCH
+    FROM reference_checks
+    GROUP BY CONTENT_ID, FIELD_NAME
+),
+qa AS (
+    SELECT s.CONTENT_ID, s.FIELD_NAME, s.EXPECTED_TYPE, s.SOURCE_STATE,
+           s.SNAPSHOT_COUNT,
+           COALESCE(c.DISTINCT_SOURCE_REFS, 0) AS SOURCE_REFERENCES,
+           COALESCE(c.BAD_REFERENCE_IDS, 0) AS BAD_REFERENCE_IDS,
+           COALESCE(c.TARGET_REF_PRESENT, 0) AS TARGET_REFERENCES,
+           COALESCE(c.TARGET_REF_TYPE_MATCH, 0) AS MATCHED_REFERENCES,
+           COALESCE(c.REF_TYPE_MISMATCH, 0) AS REF_TYPE_MISMATCH,
+           CASE
+             WHEN s.SNAPSHOT_COUNT > 1 THEN 'SOURCE_SNAPSHOT_AMBIGUOUS'
+             WHEN s.SOURCE_STATE <> 'SOURCE_POPULATED' THEN s.SOURCE_STATE
+             WHEN COALESCE(c.BAD_REFERENCE_IDS, 0) > 0 THEN 'SOURCE_REFERENCE_ID_INVALID'
+             WHEN COALESCE(c.DISTINCT_SOURCE_REFS, 0) = 0
+                 THEN 'SOURCE_REFERENCE_SHAPE_REVIEW'
+             WHEN COALESCE(c.TARGET_REF_PRESENT, 0) < c.DISTINCT_SOURCE_REFS
+                 THEN 'REFERENCE_TARGET_MISSING_OR_VERSION_MISMATCH'
+             WHEN COALESCE(c.REF_TYPE_MISMATCH, 0) > 0
+                 THEN 'REFERENCE_TYPE_MISMATCH'
+             WHEN c.TARGET_REF_TYPE_MATCH = c.DISTINCT_SOURCE_REFS
+                 THEN 'REFERENCE_ID_AND_TYPE_MATCH'
+             ELSE 'REFERENCE_REVIEW'
+           END AS QA_STATUS
+    FROM source_state s
+    LEFT JOIN check_counts c
+      ON c.CONTENT_ID = s.CONTENT_ID AND c.FIELD_NAME = s.FIELD_NAME
+)
+SELECT FIELD_NAME AS ARCHER_FIELD_NAME, EXPECTED_TYPE, QA_STATUS,
+       COUNT(*) AS CONTENT_ID_ROWS,
+       COUNT(DISTINCT CONTENT_ID) AS DISTINCT_CONTENT_IDS,
+       SUM(SOURCE_REFERENCES) AS DISTINCT_SOURCE_REFERENCES,
+       SUM(TARGET_REFERENCES) AS TARGET_REFERENCE_MATCHES_BY_HASH,
+       SUM(MATCHED_REFERENCES) AS MATCHED_REFERENCE_TYPES,
+       SUM(BAD_REFERENCE_IDS) AS BAD_SOURCE_REF_IDS,
+       MIN(CONTENT_ID) AS EXAMPLE_CONTENT_ID
+FROM qa
+GROUP BY FIELD_NAME, EXPECTED_TYPE, QA_STATUS
+ORDER BY ARCHER_FIELD_NAME, QA_STATUS;
