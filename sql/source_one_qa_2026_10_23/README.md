@@ -61,6 +61,12 @@
 | 12 | [DUE-DATE vs DUE_DATE spelling QA](85_DUE_DATE_SCREENSHOT_VS_RUNTIME_KEY.sql) | Literal screenshot/source-name discrepancy; no silent alias |
 | Optional | [Four absent Archer field names](50_SSP_FOUR_ABSENT_KEYS_SOURCE_NAME_DISCOVERY.sql) | Owner-review alternatives only; NEVER auto-substitute |
 
+## October 23 null-policy candidate (not yet deployed)
+
+The owner confirmed the exact source key is `DUE_DATE` (underscore). The existing current baseline `20_AR_SIX_FIELD_VALUE_QA.sql` still reflects the **previous** blank/default-omit policies for DUE_DATE and RISK_ASSESSMENT_REPORT. A separate [read-only candidate acceptance query](92_AR_DUE_DATE_AND_REPORT_NULL_PRESERVATION_QA.sql) is available for use **after a reviewed matching-release PREVIEW/COMMIT**, not as evidence that current Snowflake has already changed.
+
+The source/mapping change is isolated in private draft [PR #17](https://github.com/theenduser009/Oscal-mapping-strategy/pull/17), not merged or deployed. It adds `NULL_POLICY=preserve` for these two approved result-level props; `FINDINGS` already preserves nulls, and component/relation fields intentionally omit null references with no identity. A quoted worksheet `DUE-DATE` literal does not authorize a second alias.
+
 ## Minimum acceptance rules to tell the QA team
 
 - `VALUE_MATCH`, `EXPLICIT_NULL_PRESERVED`, `REFERENCE_ID_AND_TYPE_MATCH`: accepted only for the precise checked field/records/representation.
