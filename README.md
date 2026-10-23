@@ -5,6 +5,9 @@
 Run this only after PREVIEW of the matching 184-rule release, with selected
 counts 151/7/10/16. [One-cell instructions](qa/source_two_owner_json184_preview_value_qa.md)
 explain the temporary Cell 8 check; leave mapper Cells 1–7 unchanged.
+This is a release check, not an extra daily ETL requirement. The audit reuses
+bounded parsing and compact relationship summaries and prints phase progress.
+Do not repeat an already accepted matching report just for this performance update.
 
 Require result=PASS, error_count=0 and CHECKED for owner_json_properties,
 default_record_permissions, native_information_criticality and scalar_array_properties. Save output privately.

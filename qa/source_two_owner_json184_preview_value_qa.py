@@ -1,9 +1,10 @@
 # Source Two owner-json184 QA: all159 checks plus four permissions and21 explicit opaque-JSON fields.
 # Paste into a separate Python QA cell (Cell 8) after successful Cell 7 PREVIEW.
 # Leave the seven mapper cells unchanged; run only this QA cell.
-# Reads retained candidate/cached inputs only. No pipeline rerun, RAW/target
-# queries, loader calls, temporary warehouse tables or target writes.
-# Output is counts plus at most five existing IDs for missing statements.
+# Streams retained preview frames using Snowpark retrieval actions.
+# Does not rerun the pipeline, call loaders, approve commits, create warehouse
+# tables or write targets. Release validation, not an extra daily ETL cell.
+# Prints phase labels, then counts and at most five existing missing-statement IDs.
 import json
 import hashlib
 import math
@@ -12,13 +13,150 @@ from collections import Counter, defaultdict
 from decimal import Decimal
 from uuid import UUID
 
+# Audit-local reuse changes cost only; all rows, duplicates and comparisons remain.
+from collections import OrderedDict
+from contextvars import ContextVar
+from functools import wraps
+from itertools import chain
+import sys
+
+_QA_DECODE_MAX_ENTRIES = 128
+_QA_DECODE_MAX_BYTES = 8 * 1024 * 1024
+_QA_AUDIT_REUSE = ContextVar("source_two_owner_json184_audit_reuse", default=None)
+
+
+def _qa_decoded_size(value, limit):
+    """Account cached Python objects without building a large traversal worklist."""
+    total, seen = 0, set()
+    stack = [iter((value,))]
+    while stack:
+        try:
+            item = next(stack[-1])
+        except StopIteration:
+            stack.pop()
+            continue
+        identity = id(item)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        total += sys.getsizeof(item)
+        if total > limit:
+            return None
+        if isinstance(item, dict):
+            stack.append(iter(chain.from_iterable(item.items())))
+        elif isinstance(item, (list, tuple)):
+            stack.append(iter(item))
+    return total
+
+
+class _QaParentLookup(dict):
+    def __missing__(self, key):
+        # Match the old empty-parent lookup without accumulating missing keys.
+        return ()
+
+
+def _qa_build_parent_index(frame):
+    parents = defaultdict(list)
+    for edge in qa_rows(frame):
+        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
+            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    return _QaParentLookup((key, tuple(values)) for key, values in parents.items())
+
+
+class _QaAuditReuseScope:
+    def __init__(self, progress_callback=None):
+        self.progress_callback = progress_callback
+        self._decode_cache = OrderedDict()
+        self._decode_bytes = 0
+        self._parent_frame = None
+        self._parent_index = None
+
+    def decode(self, raw, parse_decimal):
+        mode = bool(parse_decimal)
+        if type(raw) is not str or sys.getsizeof(raw) > _QA_DECODE_MAX_BYTES:
+            return json.loads(raw, parse_float=Decimal) if mode else json.loads(raw)
+        key = (raw, mode)
+        if key in self._decode_cache:
+            value, size = self._decode_cache.pop(key)
+            self._decode_cache[key] = (value, size)
+            return value
+        value = json.loads(raw, parse_float=Decimal) if mode else json.loads(raw)
+        overhead = (sys.getsizeof(raw) + sys.getsizeof(key)
+                    + sys.getsizeof((value, 0)) + 192)
+        size = _qa_decoded_size(value, _QA_DECODE_MAX_BYTES - overhead)
+        if size is None:
+            return value  # Oversized data is still fully checked; only reuse is bypassed.
+        size += overhead
+        while self._decode_cache and (
+                len(self._decode_cache) >= _QA_DECODE_MAX_ENTRIES
+                or self._decode_bytes + size > _QA_DECODE_MAX_BYTES):
+            _, (_, removed) = self._decode_cache.popitem(last=False)
+            self._decode_bytes -= removed
+        if size <= _QA_DECODE_MAX_BYTES:
+            self._decode_cache[key] = (value, size)
+            self._decode_bytes += size
+        return value
+
+    def parents(self, frame):
+        if self._parent_frame is not frame:
+            # Cache only one repeated Catalog edge frame; preserve original identity.
+            self._parent_index = _qa_build_parent_index(frame)
+            self._parent_frame = frame
+        return self._parent_index
+
+    def phase(self, name, state):
+        if self.progress_callback is not None:
+            self.progress_callback(name, state)
+
+    def close(self):
+        self._decode_cache.clear()
+        self._decode_bytes = 0
+        self._parent_index = None
+        self._parent_frame = None
+        self.progress_callback = None
+
+
+def _qa_decode_json(raw, parse_decimal):
+    scope = _QA_AUDIT_REUSE.get()
+    if scope is None:
+        return json.loads(raw, parse_float=Decimal) if parse_decimal else json.loads(raw)
+    return scope.decode(raw, parse_decimal)
+
+
+def qa_parent_index(graph):
+    scope = _QA_AUDIT_REUSE.get()
+    context = graph["context"]
+    if (scope is not None and context.get("source_key") == "source-two-source"
+            and context.get("config", {}).get("OSCAL_MODEL") == "CATALOG"):
+        return scope.parents(graph["edges"])
+    return _qa_build_parent_index(graph["edges"])
+
+
+def _qa_compact_provenance(function):
+    """One small result per validated unique node, local to one helper call."""
+    cache = {}
+    @wraps(function)
+    def read(node):
+        key = node["NODE_KEY"]
+        if key not in cache:
+            cache[key] = function(node)
+        return cache[key]
+    return read
+
+
+def _qa_phase(name, state):
+    scope = _QA_AUDIT_REUSE.get()
+    if scope is not None:
+        scope.phase(name, state)
+
+
 def qa_rows(frame):
     for row in frame.to_local_iterator():
         yield row.as_dict(recursive=True) if hasattr(row, "as_dict") else dict(row)
 
 def qa_obj(value):
     if isinstance(value, str):
-        value = json.loads(value, parse_float=Decimal)
+        value = _qa_decode_json(value, True)
     if not isinstance(value, dict):
         raise ValueError("QA_EXPECTED_JSON_OBJECT")
     return value
@@ -150,11 +288,7 @@ def qa_catalog_extensions(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(
-                edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
 
     def one_parent(node):
@@ -251,6 +385,7 @@ def qa_catalog_extensions(graph, source_input, load):
         "catalog.groups[].groups[].groups[]": "subsections"}
     group_index = defaultdict(list)
 
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -493,14 +628,12 @@ def qa_owner_procedure_properties(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
     def parent_of(node):
         keys = parents[node["NODE_KEY"]]
         return nodes.get(keys[0]) if len(keys) == 1 else None
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -698,14 +831,12 @@ def qa_policy_scalar_properties(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
     def parent_of(node):
         keys = parents[node["NODE_KEY"]]
         return nodes.get(keys[0]) if len(keys) == 1 else None
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -905,14 +1036,12 @@ def qa_owner_flag_label_properties(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
     def parent_of(node):
         keys = parents[node["NODE_KEY"]]
         return nodes.get(keys[0]) if len(keys) == 1 else None
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -1127,14 +1256,12 @@ def qa_native_information_criticality(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
     def parent_of(node):
         keys = parents[node["NODE_KEY"]]
         return nodes.get(keys[0]) if len(keys) == 1 else None
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -1278,7 +1405,7 @@ def qa_scalar_array_source(record, context):
     if raw is None and options.get("null_source_as_empty"):
         return {}
     if isinstance(raw, str):
-        raw = json.loads(raw, parse_float=Decimal) if options.get("parse_decimal") else json.loads(raw)
+        raw = _qa_decode_json(raw, bool(options.get("parse_decimal")))
     if not isinstance(raw, dict):
         raise ValueError("QA_SCALAR_ARRAY_EXPECTED_JSON_OBJECT")
     return raw
@@ -1394,14 +1521,12 @@ def qa_owner_scalar_array_properties(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
     def parent_of(node):
         keys = parents[node["NODE_KEY"]]
         return nodes.get(keys[0]) if len(keys) == 1 else None
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -1558,8 +1683,7 @@ def qa_permission_source(record, context):
     if raw is None and options.get("null_source_as_empty", False):
         return {}
     if isinstance(raw, str):
-        raw = (json.loads(raw, parse_float=Decimal)
-               if options.get("parse_decimal", True) else json.loads(raw))
+        raw = _qa_decode_json(raw, bool(options.get("parse_decimal", True)))
     if not isinstance(raw, dict):
         raise ValueError("QA_PERMISSION_EXPECTED_JSON_OBJECT")
     return raw
@@ -1661,14 +1785,12 @@ def qa_owner_permissions_properties(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
     def parent_of(node):
         keys = parents[node["NODE_KEY"]]
         return nodes.get(keys[0]) if len(keys) == 1 else None
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -1921,14 +2043,12 @@ def qa_owner_business_json_properties(graph, source_input, load):
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {node["NODE_KEY"]: node for node in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     table = ctx["config"]["SOURCE_TABLE_NAME"]
     def parent_of(node):
         keys = parents[node["NODE_KEY"]]
         return nodes.get(keys[0]) if len(keys) == 1 else None
+    @_qa_compact_provenance
     def provenance(node):
         props = qa_payload(node).get("props", [])
         qa_check(isinstance(props, list), "QA_GROUP_PROPERTIES_MUST_BE_ARRAY")
@@ -2045,7 +2165,7 @@ def qa_owner_business_json_properties(graph, source_input, load):
             "scope": "Opaque sorted compact JSON for21 original field occurrences; retained samples establish NULL omission only, positive generic-JSON fixtures are supplemental; no native entity/link/role/event/alias/calculation or persistence claim"}
 
 
-def run_source_two_owner_json184_value_qa(model_graphs, source_inputs, pipeline_report, detail_limit=5):
+def _run_source_two_owner_json184_value_qa(model_graphs, source_inputs, pipeline_report, detail_limit=5):
     MODEL_GRAPHS, SOURCE_INPUTS, PIPELINE_REPORT = model_graphs, source_inputs, pipeline_report
     qa_check(type(detail_limit) is int and 0 <= detail_limit <= 5, "QA_DETAIL_LIMIT_ZERO_TO_FIVE")
     routes = {("source-two-source", "CATALOG"): 93,
@@ -2190,6 +2310,7 @@ def run_source_two_owner_json184_value_qa(model_graphs, source_inputs, pipeline_
                           ("direct", "test-result", finding_props),
                       "DEVIATIONS_AUTHORITATIVE_SOURCES": ("direct", "deviation", finding_props),
                       "EVIDENCE_REPOSITORY": ("direct", "evidence-repository", finding_props)}
+    _qa_phase("child-assessment-values", "STARTED")
     child_summaries = []
     for route in routes:
         if route[1] != "ASSESSMENT_RESULTS":
@@ -2299,25 +2420,43 @@ def run_source_two_owner_json184_value_qa(model_graphs, source_inputs, pipeline_
                                 "orphan_property_values": orphan_values,
                                 "ownership_errors": ownership_errors})
     
+    _qa_phase("child-assessment-values", "COMPLETED")
     route = ("source-two-source", "CATALOG")
     graph = MODEL_GRAPHS[route]
     ctx = graph["context"]
+    _qa_phase("owner-procedure-values", "STARTED")
     owner_procedures = qa_owner_procedure_properties(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("owner-procedure-values", "COMPLETED")
+    _qa_phase("policy-scalar-values", "STARTED")
     policy_scalars = qa_policy_scalar_properties(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("policy-scalar-values", "COMPLETED")
+    _qa_phase("owner-flag-and-label-values", "STARTED")
     flag_labels = qa_owner_flag_label_properties(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("owner-flag-and-label-values", "COMPLETED")
+    _qa_phase("native-information-and-criticality", "STARTED")
     native_fields = qa_native_information_criticality(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("native-information-and-criticality", "COMPLETED")
+    _qa_phase("scalar-array-values", "STARTED")
     scalar_arrays = qa_owner_scalar_array_properties(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("scalar-array-values", "COMPLETED")
+    _qa_phase("permissions-json-values", "STARTED")
     permissions = qa_owner_permissions_properties(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("permissions-json-values", "COMPLETED")
+    _qa_phase("owner-business-json-values", "STARTED")
     owner_json = qa_owner_business_json_properties(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("owner-business-json-values", "COMPLETED")
+    _qa_phase("catalog-extension-values", "STARTED")
     catalog_extensions = qa_catalog_extensions(
         graph, SOURCE_INPUTS[route[0]], groups[route]["load"])
+    _qa_phase("catalog-extension-values", "COMPLETED")
+    _qa_phase("native-control-associations-and-statements", "STARTED")
     spec = ctx["compiled_plan"]["native_catalog"]
     qa_check(ctx["graph_report"].get("NATIVE_CATALOG_FIELD_VALUE_CHECK")
              == "CANDIDATE_MATCHES_FROZEN_TARGET_FIELDS", "QA_NATIVE_FROZEN_FIELD_CHECK_REQUIRED")
@@ -2345,10 +2484,7 @@ def run_source_two_owner_json184_value_qa(model_graphs, source_inputs, pipeline_
     node_rows = list(qa_rows(graph["nodes"]))
     nodes = {n["NODE_KEY"]: n for n in node_rows}
     qa_check(len(nodes) == len(node_rows), "QA_DUPLICATE_PREVIEW_NODE_KEY")
-    parents = defaultdict(list)
-    for edge in qa_rows(graph["edges"]):
-        if edge["DEPENDENCY_TYPE"] == "CONTAINS":
-            parents[edge["FK_TARGET_ELEMENT_HASH"]].append(edge["FK_SOURCE_ELEMENT_HASH"])
+    parents = qa_parent_index(graph)
     # Independent Catalog+Standard association closure, without rebuilding LCA
     # placement or controls. Owner-group provenance already exists in the graph.
     owner_bindings = spec["owner_bindings"]
@@ -2521,6 +2657,7 @@ def run_source_two_owner_json184_value_qa(model_graphs, source_inputs, pipeline_
                   for key in ("normalization_review", "missing_values", "unexpected_values",
                               "ownership_errors", "invalid_property_shape",
                               "wrong_owner_occurrences", "orphan_property_values"))
+    _qa_phase("native-control-associations-and-statements", "COMPLETED")
     return {"owner_json_properties": owner_json,
             "default_record_permissions": permissions,
             "scalar_array_properties": scalar_arrays,
@@ -2539,13 +2676,33 @@ def run_source_two_owner_json184_value_qa(model_graphs, source_inputs, pipeline_
             "result": "PASS" if errors == 0 else "REVIEW_REQUIRED",
             "scope": "Frozen preview parity only; no persistence/full-document-conformance claim"}
 
+def run_source_two_owner_json184_value_qa(
+        model_graphs, source_inputs, pipeline_report, detail_limit=5,
+        progress_callback=None):
+    """Audit one frozen184 preview; reuse is scoped and never changes acceptance."""
+    qa_check(_QA_AUDIT_REUSE.get() is None, "QA_AUDIT_ALREADY_ACTIVE")
+    qa_check(progress_callback is None or callable(progress_callback),
+             "QA_PROGRESS_CALLBACK_MUST_BE_CALLABLE")
+    scope = _QaAuditReuseScope(progress_callback)
+    token = _QA_AUDIT_REUSE.set(scope)
+    try:
+        return _run_source_two_owner_json184_value_qa(
+            model_graphs, source_inputs, pipeline_report, detail_limit)
+    finally:
+        try:
+            scope.close()
+        finally:
+            _QA_AUDIT_REUSE.reset(token)
+
+
 qa_session_names = ("MODEL_GRAPHS", "SOURCE_INPUTS", "PIPELINE_REPORT")
 qa_session_present = [name for name in qa_session_names if name in globals()]
 if __name__ == "__main__" or qa_session_present:
     if len(qa_session_present) != len(qa_session_names):
         raise RuntimeError("QA_PREVIEW_SESSION_REQUIRED")
     SOURCE_TWO_OWNER_JSON184_VALUE_QA = run_source_two_owner_json184_value_qa(
-        MODEL_GRAPHS, SOURCE_INPUTS, PIPELINE_REPORT)
+        MODEL_GRAPHS, SOURCE_INPUTS, PIPELINE_REPORT,
+        progress_callback=lambda phase, state: print("QA phase: " + phase + " " + state, flush=True))
     print("SOURCE_TWO_OWNER_JSON184_PREVIEW_VALUE_QA")
     print(json.dumps(SOURCE_TWO_OWNER_JSON184_VALUE_QA, indent=2, default=str))
     if SOURCE_TWO_OWNER_JSON184_VALUE_QA["error_count"]:
