@@ -1,33 +1,29 @@
 # OSCAL Copy-and-Run Workbench
 
-## Current environment correction
+## Current mapping batch
 
-The owner's Snowflake notebooks are isolated and cannot connect to the private
-Git repository. The available workflow is copy/paste, with separate Source One
-and Source Two mapping CSVs and existing SQL recipes/registry. Git-import
-installation instructions are withdrawn for this environment. No temporary
-mapping generator, new stage or replacement notebook is an established solution.
-The published package/verifier remains an artifact check, not an installed
-daily ETL. Functional deployment changes are held for context reconciliation.
+The eleven owner-approved Source Two extension mappings are implemented
+privately and passed focused cloud checks. The existing115 rules are preserved;
+the candidate selects126 rules from one partitioned external Source Two CSV.
+Source One keeps its separate CSV. The existing SQL registry remains configured.
 
+[Approved-extension artifact verifier](qa/verify_source_two_bulk_extensions.py)
+is a read-only deployment/CI utility for an engineer who already has the private
+candidate directory. It verifies the pinned seven cells, one external CSV,
+source partitions and selected rule counts. **Do not paste this CLI utility
+into a Snowflake notebook cell.** It does not install files, query Snowflake,
+generate mapping data or authorize writes. Its exact code passed the private
+cloud verification; the private runtime and CSV are not published here.
 
-## Persistent daily deployment verification
+The owner's notebook is isolated and cannot connect to private Git. Interaction
+is copy/paste-only. The permitted mechanism for replacing the persistent external
+CSV is unverified; no upload/download/stage or temporary mapping generator is
+assumed. Cloud checks do not establish Snowflake installation or daily scheduling.
 
-The private project now has a durable external-file deployment candidate:
-seven matched runtime cells, four CSV inputs and a Git-importable notebook.
-Its cloud checks passed; actual Snowflake installation and scheduled daily
-execution are not established by those filesystem checks.
-
-[Package verifier](qa/verify_source_two_daily_release.py) is a read-only
-deployment/CI utility for an operator who already has the private deployment
-directory. It validates pinned files and uses the actual extracted CSV reader.
-**Do not paste this CLI utility into a Snowflake notebook cell.**
-It does not download private code, install files, query Snowflake or write data.
-Runtime cells, CSVs, registry and deployment instructions remain private.
-
-The completed historical DEV commit below is not a recurring daily job and
-its fixed approved counts must not authorize future deltas.
-
+The older [four-file package verifier](qa/verify_source_two_daily_release.py)
+is retained as historical artifact QA. Its Git-import packaging is not the
+owner's installation path. The former functional-development hold is resolved;
+the owner resumed bulk development. Warehouse execution remains separate.
 
 **Completed: the approved Source Two DEV commit was run by the owner and reported COMMITTED_AND_VERIFIED for all four routes, with storage verification passed and zero retirements. No repeat run is needed.**
 
