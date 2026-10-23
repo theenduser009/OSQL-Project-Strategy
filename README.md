@@ -1,15 +1,16 @@
 # OSCAL Validation
 
-[Current frozen-preview value validation](qa/source_two_native153_preview_value_qa.py)
+[Current frozen-preview value validation](qa/source_two_scalar_array159_preview_value_qa.py)
 
-After a successful PREVIEW of the matching153-rule release, add one temporary
+After a successful PREVIEW of the matching159-rule release, add one temporary
 Python Cell8 in the same active notebook session. Paste the entire validation
 script and run only Cell8. Leave Cells1–7 unchanged.
 
 The report prints underneath the cell, with marker
-`SOURCE_TWO_NATIVE153_PREVIEW_VALUE_QA`. The current release requires selected
-rule counts120/7/10/16, `result=PASS`, `error_count=0`, and
-`native_information_criticality.status=CHECKED`. Save the complete output
+`SOURCE_TWO_SCALAR_ARRAY159_PREVIEW_VALUE_QA`. The current release requires selected
+rule counts126/7/10/16, `result=PASS`, `error_count=0`, and
+`native_information_criticality.status=CHECKED` and
+`scalar_array_properties.status=CHECKED`. Save the complete output
 privately. The validator also supports older releases; `NOT_ENABLED` does not
 validate the current additions. Missing session state or a failed check stops
 execution.
@@ -22,6 +23,7 @@ your private workspace.
 
 These remain reference tools for their own accepted releases:
 
+- [Previous153 audit](qa/source_two_native153_preview_value_qa.py).
 - [Eleven-extension audit](qa/source_two_extensions_preview_value_qa.py).
 - [Earlier sprint audit](qa/source_two_sprint_preview_value_qa.py).
 - [Artifact verifier](qa/verify_source_two_bulk_extensions.py).
