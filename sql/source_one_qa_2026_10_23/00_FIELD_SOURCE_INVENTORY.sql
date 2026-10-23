@@ -1,8 +1,10 @@
--- OSCAL / Source One — all 25 screenshot fields + 2 follow-up fields.
+-- OSCAL QA scope: 25 named Archer fields visible in owner's screenshot ONLY.
 -- Snapshot: 2026-10-23; mapping CSV blob b9f982c445f293f9b5d47cab565194aa29ef8770.
 -- Read-only Snowflake DEV field inventory; NO target equality claim.
 -- Source may have multiple raw snapshots of one Content ID; the count
 -- AMBIGUOUS_SNAPSHOTS identifies that gap rather than choosing silently.
+-- Screenshot row 18 is malformed/shifted (not a verifiable Archer field);
+-- row 26 BASELINE_RECOMMENDATION is visible but unnumbered.
 -- 'DEFERRED' fields are source-profiled, never called mapped/PASS.
 WITH field_contract AS (
   SELECT column1::STRING AS ARCHER_FIELD_NAME,
@@ -36,9 +38,7 @@ WITH field_contract AS (
     ('RISK_ASSESSMENT_REPORT', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'json-text', 'omit'),
     ('DUE_DATE', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'date', 'omit'),
     ('ADD_OVERLAY', 'Profile', 'Multiple — see notes', 'DEFERRED', 'UNASSIGNED', 'omit'),
-    ('BASELINE_RECOMMENDATION', 'Profile', 'profile.imports[]', 'DEFERRED', 'UNASSIGNED', 'omit'),
-    ('INFORMATION_CLASSIFICATION', 'System Security Plan', 'system-security-plan.system-characteristics.props[]', 'APPROVED', 'archer-select', 'omit'),
-    ('DAILY_LOSS_AMOUNT_FROM_OUTAGE', 'System Security Plan', 'system-security-plan.system-characteristics.props[]', 'APPROVED', 'direct', 'preserve')
+    ('BASELINE_RECOMMENDATION', 'Profile', 'profile.imports[]', 'DEFERRED', 'UNASSIGNED', 'omit')
 ),
 source_rows AS (
   SELECT CONTENT_ID::STRING AS CONTENT_ID,
