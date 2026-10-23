@@ -1,12 +1,12 @@
 # Owner's 29-row "Fields are not found" worksheet — QA handoff
 
-**Updated October 23, 2026. Scope:** ONLY the 29 numbered rows visible in the owner's latest full worksheet photograph. This **supersedes** the earlier cropped screenshot interpretation of 25 fields. There are **28 identifiable Archer-name entries** and **one non-field section/structure row #18**. Of the 28, 26 exact names are in the current runtime CSV (including the blocked category), 1 name differs in punctuation (`DUE-DATE` screenshot vs `DUE_DATE` runtime), 1 key (`PORTS_PROTOCOLS_AND_SERVICES_MANAGEMENT_PPSM`) has no executable CSV row, and `RECOMMENDED_SECURITY_CATEGORY` has a runtime `BLOCKED_IF_POPULATED` row. (Overall, 27 have executable CSV rows when the spelling difference is resolved; among them two are DEFERRED and one BLOCKED.) **Row #18 is not an Archer source field; mark it N/A unless the owner supplies an actual source key.**
+**Updated October 23, 2026. Scope:** ONLY the 29 numbered rows visible in the owner's latest full worksheet photograph. This **supersedes** the earlier cropped screenshot interpretation of 25 fields. There are **28 identifiable Archer-name entries** and **one non-field section/structure row #18**. Of the 28, 26 exact names are in the current runtime CSV (including the blocked category), 1 printed spelling difference already resolved by owner (`DUE_DATE` is correct; no alias), 1 key (`PORTS_PROTOCOLS_AND_SERVICES_MANAGEMENT_PPSM`) has no executable CSV row, and `RECOMMENDED_SECURITY_CATEGORY` has a runtime `BLOCKED_IF_POPULATED` row. (Overall, 27 have executable CSV rows when the spelling difference is resolved; among them two are DEFERRED and one BLOCKED.) **Row #18 is not an Archer source field; mark it N/A unless the owner supplies an actual source key.**
 
 **Current repository evidence:** `theenduser009/Oscal-mapping-strategy`, `simplify-metadata-boundary`, code inspected at `8fb070c2f783b7c76d56552f1f488cee5a4f6f41`; exact `Mapping/ARCHER_OSCAL_MAPPINGS.csv` blob `b9f982c445f293f9b5d47cab565194aa29ef8770`. The repository's runtime CSV, not older worksheet paths, is the executable mapping contract. This SQL pack performs **read-only** DEV checks; publication isn't live Snowflake execution or COMMIT acceptance.
 
 ## Single handoff for QA
 
-**Start with [00_FIELD_SOURCE_INVENTORY.sql](00_FIELD_SOURCE_INVENTORY.sql)** for all 28 literal screenshot names. Then use each focused SQL below to prove persisted path/value equality. Returning `SOURCE_KEY_ABSENT` or explicit null is not a failed *populated* mapping; `TARGET_PRESENT` without value/identity parity isn't a PASS.
+**Start with [00_FIELD_SOURCE_INVENTORY.sql](00_FIELD_SOURCE_INVENTORY.sql)** for 28 named rows using the owner-confirmed `DUE_DATE` key (not a `DUE-DATE` alias). Then use each focused SQL below to prove persisted path/value equality. Returning `SOURCE_KEY_ABSENT` or explicit null is not a failed *populated* mapping; `TARGET_PRESENT` without value/identity parity isn't a PASS.
 
 ## Exact screenshot rows, preserved in order
 
@@ -35,7 +35,7 @@
 | 21 | `PCT_CURRENT_HIGHEST_DEVICE_RISK_THRESHOLD` | APPROVED | Assessment Results results.observations[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending observations[] value QA |
 | 22 | `PCT_CURRENT_AVERAGE_DEVICE_RISK_THRESHOLD` | APPROVED | Assessment Results results.observations[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending observations[] value QA |
 | 23 | `RISK_ASSESSMENT_REPORT` | APPROVED | Assessment Results results.props[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending JSON-text attachment-ID QA |
-| 24 | `DUE-DATE` | KEY SPELLING MISMATCH | Assessment Results results.props[] | [SQL](85_DUE_DATE_SCREENSHOT_VS_RUNTIME_KEY.sql) | Literal screenshot DUE-DATE ≠ executable CSV DUE_DATE; check both keys, then value QA |
+| 24 | `DUE_DATE` (owner-confirmed; screenshot printed `DUE-DATE`) | APPROVED — current omit, candidate preserve | Assessment Results results.props[] | [SQL](92_AR_DUE_DATE_AND_REPORT_NULL_PRESERVATION_QA.sql) | `DUE_DATE` exact Archer key confirmed; PR #17 preserves explicit null after new approval/COMMIT, not yet deployed |
 | 25 | `ADD_OVERLAY` | DEFERRED | Multiple — see notes | [SQL](60_PROFILE_TWO_DEFERRED_FIELDS_SOURCE_ONLY.sql) | DEFERRED; source-only; cannot target PASS |
 | 26 | `BASELINE_RECOMMENDATION` | DEFERRED | profile.imports[] | [SQL](60_PROFILE_TWO_DEFERRED_FIELDS_SOURCE_ONLY.sql) | DEFERRED; source-only; cannot target PASS |
 | 27 | `POAMS` | APPROVED | plan-of-action-and-milestones.poam-items[] | [SQL](70_POAMS_REFERENCE_TO_POAM_DIM.sql) | APPROVED, older PREVIEW only; persisted POAM COMMIT/readback unverified |
@@ -58,7 +58,7 @@
 | 9 | [POAMS reference graph](70_POAMS_REFERENCE_TO_POAM_DIM.sql) | POAM poam-items root/child graph matching; **historical PREVIEW does not prove COMMIT** |
 | 10 | [Profile deferred source profiles](60_PROFILE_TWO_DEFERRED_FIELDS_SOURCE_ONLY.sql) | Not mapped; inspect source only |
 | 11 | [PPSM & Recommended Category exceptions](80_PORTS_AND_RECOMMENDED_CATEGORY_MAPPING_GAPS.sql) | No executable PPSM mapping; category blocked-if-populated |
-| 12 | [DUE-DATE vs DUE_DATE spelling QA](85_DUE_DATE_SCREENSHOT_VS_RUNTIME_KEY.sql) | Literal screenshot/source-name discrepancy; no silent alias |
+| 12 | [Historical screenshot DUE-DATE vs runtime DUE_DATE name QA](85_DUE_DATE_SCREENSHOT_VS_RUNTIME_KEY.sql) | Already resolved by owner: DUE_DATE is correct key; optional historical inspection only |
 | Optional | [Four absent Archer field names](50_SSP_FOUR_ABSENT_KEYS_SOURCE_NAME_DISCOVERY.sql) | Owner-review alternatives only; NEVER auto-substitute |
 
 ## October 23 null-policy candidate (not yet deployed)
@@ -73,7 +73,7 @@ The source/mapping change is isolated in private draft [PR #17](https://github.c
 - `SOURCE_KEY_ABSENT`, `SOURCE_EMPTY`, `SOURCE_NULL_OMITTED`: source not populated; do not count as a tested populated-value mapping.
 - `POPULATED_SOURCE_TARGET_MISSING`, `VALUE_MISMATCH`, `SOURCE_REFERENCE_ID_INVALID`, `ROLE_ORPHAN`: flag for investigation before owner-approved repair; do not blindly rerun a load.
 - `TARGET_PRESENT_SHAPE_OR_MULTI_REVIEW`, `ROLE_GRAPH_AND_COUNT_MATCH_UUID_IDENTITY_REVIEW`: partial QA, not PASS.
-- `BLOCKED_IF_POPULATED`, `DEFERRED`, `NOT_IN_RUNTIME_CSV`, `KEY SPELLING MISMATCH`: mapping decisions/metadata cleanup required if the source is populated; these are not target field PASS.
+- `BLOCKED_IF_POPULATED`, `DEFERRED`, `NOT_IN_RUNTIME_CSV`, `KEY SPELLING MISMATCH`: the DUE_DATE key is now resolved by owner; other true discrepancies require mapping-owner decision if populated; these are not target field PASS.
 - Source `CONTENT_ID` and referenced component/POAM ContentId must stay distinct. Confirm FACT parent ownership, not only a DIM `props` label. A current notebook version/fingerprint mismatch must be resolved before calling unexpected hash mismatches a code defect.
 
 **Evidence achieved earlier (owner-supplied Snowsight screenshots, October 23):** `INFORMATION_SYSTEM_TYPE` values and explicit nulls demonstrated; `REQUEST_TO_BEGIN_ASSESSMENT` 2,766/2,813 value matches (remaining statuses unclassified); `HELPER_ALLOCATED_CONTROLS` 2,813/2,813 `VALUE_MATCH`; four SSP Control fields exact source keys absent for inspected 2,813; `HARDWARE` 1/1, `SOFTWARE` 7/7, `INTERCONNECTIONS` 4,444/4,444, `INTERCONNECTIONS_CONNECTING_INFORMATION_SYSTEM` 352/352 reference ID/type matches; `SUBSYSTEMS` and `SAP_INTAKE_FORM_INTERCONNECTIONS` source JSON null for 2,813. These are specific QA observations only, not a fresh full Source One COMMIT.
