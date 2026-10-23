@@ -1,0 +1,19 @@
+-- 2026-10-23 | READ ONLY | Snowflake DEV
+-- Source One: PCT_CURRENT_CONTROL_RISK_THRESHOLD (exact key)
+-- Approved mapping: SSP System Characteristics props[].
+-- Stored property: pct-current-control-risk-threshold (direct scalar mapping).
+-- This query inspects persisted DIM data; it does not prove a load occurred.
+SELECT
+    SOURCE_RECORD_ID AS ARCHER_CONTENT_ID,
+    HEX_ENCODE(PK_OSCAL_SSP_ELEMENT_HASH) AS DIM_ELEMENT_HASH,
+    ELEMENT_TYPE,
+    METADATA_JSON:"name"::STRING AS ARCHER_FIELD_PROPERTY,
+    METADATA_JSON:"value"::STRING AS STORED_VALUE,
+    METADATA_JSON AS FULL_OSCAL_JSON
+FROM RTX_ENTERPRISESERVICES_DEV.ES_ESC_GRC_CURATED.DIM_OSCAL_SSP_ELEMENT
+WHERE ELEMENT_TYPE = 'props'
+  AND SOURCE_SYSTEM_NAME = 'ARCHER'
+  AND SOURCE_TABLE_NAME = 'ARCHER_CONTENT_AUTHORIZATION_PACKAGE_RAW'
+  AND METADATA_JSON:"name"::STRING = 'pct-current-control-risk-threshold'
+ORDER BY SOURCE_RECORD_ID
+LIMIT 100;
