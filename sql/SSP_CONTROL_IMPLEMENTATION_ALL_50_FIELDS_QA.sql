@@ -109,9 +109,13 @@ source_prepared AS (
                   AND COALESCE(ARRAY_SIZE(s.SOURCE_VALUE:"UserList"), 0) = 0
                   AND COALESCE(ARRAY_SIZE(s.SOURCE_VALUE:"GroupList"), 0) = 0
                   THEN 'SOURCE_EMPTY'
+             WHEN IS_OBJECT(s.SOURCE_VALUE)
+                  AND ARRAY_SIZE(OBJECT_KEYS(s.SOURCE_VALUE)) = 0 THEN 'SOURCE_EMPTY'
              WHEN s.TRANSFORM_ID = 'archer-select'
                   AND IS_ARRAY(s.SOURCE_VALUE:"ResolvedValues")
                   AND ARRAY_SIZE(s.SOURCE_VALUE:"ResolvedValues") = 0
+                  AND COALESCE(ARRAY_SIZE(s.SOURCE_VALUE:"ValuesListIds"),
+                               ARRAY_SIZE(s.SOURCE_VALUE:"ValueListIds"), 0) = 0
                   THEN 'SOURCE_EMPTY'
              ELSE 'SOURCE_POPULATED'
            END AS SOURCE_STATE,
