@@ -1,10 +1,12 @@
--- OSCAL QA scope: 25 named Archer fields visible in owner's screenshot ONLY.
+-- OSCAL QA scope: 28 named Archer fields in owner's FULL 29-row screenshot.
 -- Snapshot: 2026-10-23; mapping CSV blob b9f982c445f293f9b5d47cab565194aa29ef8770.
 -- Read-only Snowflake DEV field inventory; NO target equality claim.
 -- Source may have multiple raw snapshots of one Content ID; the count
 -- AMBIGUOUS_SNAPSHOTS identifies that gap rather than choosing silently.
--- Screenshot row 18 is malformed/shifted (not a verifiable Archer field);
--- row 26 BASELINE_RECOMMENDATION is visible but unnumbered.
+-- Screenshot row 18 is malformed/shifted (not a verifiable Archer field).
+-- Screenshot numbered rows 1-17 and 19-29 contain 28 real field names.
+-- The three newly revealed rows 27-29 are POAMS, PPSM, and category.
+-- Port/protocols field is not in executable CSV, status is a QA flag.
 -- 'DEFERRED' fields are source-profiled, never called mapped/PASS.
 WITH field_contract AS (
   SELECT column1::STRING AS ARCHER_FIELD_NAME,
@@ -38,7 +40,10 @@ WITH field_contract AS (
     ('RISK_ASSESSMENT_REPORT', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'json-text', 'omit'),
     ('DUE_DATE', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'date', 'omit'),
     ('ADD_OVERLAY', 'Profile', 'Multiple — see notes', 'DEFERRED', 'UNASSIGNED', 'omit'),
-    ('BASELINE_RECOMMENDATION', 'Profile', 'profile.imports[]', 'DEFERRED', 'UNASSIGNED', 'omit')
+    ('BASELINE_RECOMMENDATION', 'Profile', 'profile.imports[]', 'DEFERRED', 'UNASSIGNED', 'omit'),
+    ('POAMS', 'POA&M', 'plan-of-action-and-milestones.poam-items[]', 'APPROVED', 'direct', 'omit'),
+    ('PORTS_PROTOCOLS_AND_SERVICES_MANAGEMENT_PPSM', 'Multiple - See Notes', 'Multiple - See Notes', 'NOT_IN_RUNTIME_CSV', 'UNASSIGNED', 'omit'),
+    ('RECOMMENDED_SECURITY_CATEGORY', 'SSP', 'system-security-plan.system-characteristics.security-impact-level', 'BLOCKED_IF_POPULATED', 'reject-populated', 'omit')
 ),
 source_rows AS (
   SELECT CONTENT_ID::STRING AS CONTENT_ID,
