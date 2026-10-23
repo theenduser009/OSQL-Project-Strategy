@@ -28,10 +28,12 @@ this audit or by publication. A later write needs a separately reviewed exact
 delta and explicit approval.
 
 The correction passed independent review and cloud checks: sixteen audit tests,
-eleven actual-engine mapping/sample tests and six single-CSV checks, plus both
+twelve actual-engine mapping/sample tests and six single-CSV checks, plus both
 artifact verifiers. The new integration regression first reproduced the exact
 contract mismatch against all 93 real compiled Catalog mappings, then passed
-with this correction. Missing or duplicated intended mappings and wrong owner,
+with this correction. A further integration check passed the complete audit API
+against all four actual compiled graph routes and all 33 child mappings.
+Missing or duplicated intended mappings and wrong owner,
 lookup or target paths still fail. These checks
 do not establish a live value-QA PASS until the owner supplies its report.
 
