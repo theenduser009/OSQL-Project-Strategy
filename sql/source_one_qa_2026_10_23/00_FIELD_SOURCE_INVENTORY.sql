@@ -6,7 +6,9 @@
 -- Screenshot row 18 is malformed/shifted (not a verifiable Archer field).
 -- Screenshot numbered rows 1-17 and 19-29 contain 28 real field names.
 -- The three newly revealed rows 27-29 are POAMS, PPSM, and category.
--- Port/protocols field is not in executable CSV, status is a QA flag.
+-- Ports/protocols field is not in executable CSV; status is a QA flag.
+-- DUE-DATE (screenshot literal) differs from DUE_DATE (runtime key);
+-- neither name nor value is silently substituted.
 -- 'DEFERRED' fields are source-profiled, never called mapped/PASS.
 WITH field_contract AS (
   SELECT column1::STRING AS ARCHER_FIELD_NAME,
@@ -38,7 +40,7 @@ WITH field_contract AS (
     ('PCT_CURRENT_HIGHEST_DEVICE_RISK_THRESHOLD', 'Assessment Results', 'assessment-results.results[].observations[]', 'APPROVED', 'scalar-score', 'omit'),
     ('PCT_CURRENT_AVERAGE_DEVICE_RISK_THRESHOLD', 'Assessment Results', 'assessment-results.results[].observations[]', 'APPROVED', 'scalar-score', 'omit'),
     ('RISK_ASSESSMENT_REPORT', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'json-text', 'omit'),
-    ('DUE_DATE', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'date', 'omit'),
+    ('DUE-DATE', 'Assessment Results', 'assessment-results.results[].props[]', 'SCREENSHOT_KEY_DIFFERS_FROM_RUNTIME_CSV', 'UNVERIFIED', 'omit'),
     ('ADD_OVERLAY', 'Profile', 'Multiple — see notes', 'DEFERRED', 'UNASSIGNED', 'omit'),
     ('BASELINE_RECOMMENDATION', 'Profile', 'profile.imports[]', 'DEFERRED', 'UNASSIGNED', 'omit'),
     ('POAMS', 'POA&M', 'plan-of-action-and-milestones.poam-items[]', 'APPROVED', 'direct', 'omit'),
