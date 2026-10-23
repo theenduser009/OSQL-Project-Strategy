@@ -124,19 +124,24 @@ def qa_extension_compare(metric, raw, observed):
 def qa_catalog_extensions(graph, source_input, load):
     """Match original frozen Source/child records without rebuilding the mapper."""
     ctx = graph["context"]
+    # INFORMATION also exists on Topic parts. Identify the two new mappings by
+    # original field AND registry owner; never shadow one owner with another.
     expected_contract = {
-        "INFORMATION": ("text", "information", "catalog.metadata.props[]"),
-        "DPF_REFERENCE": ("text", "dpf-reference",
-                          "catalog.groups[].groups[].groups[].props")}
+        ("INFORMATION", "catalog.metadata.props[]"):
+            ("text", "information", "catalog.metadata.props[]", None),
+        ("DPF_REFERENCE", "catalog.groups[].groups[].groups[]"):
+            ("text", "dpf-reference",
+             "catalog.groups[].groups[].groups[].props", "subsections")}
+    selected_rows = [
+        row for row in ctx["mapping_rows"]
+        if (row["SOURCE_FIELD_NAME"], row["OWNER_ELEMENT_PATH"]) in expected_contract]
     selected_contract = {
-        row["SOURCE_FIELD_NAME"]: (
+        (row["SOURCE_FIELD_NAME"], row["OWNER_ELEMENT_PATH"]): (
             row["TRANSFORM_ID"], row["REPRESENTATION_PARAMS"]["property_name"],
-            row["OSCAL_ELEMENT_PATH"])
-        for row in ctx["mapping_rows"]
-        if row["SOURCE_FIELD_NAME"] in expected_contract}
-    qa_check(selected_contract == expected_contract
-             and sum(row["SOURCE_FIELD_NAME"] in expected_contract
-                     for row in ctx["mapping_rows"]) == 2,
+            row["OSCAL_ELEMENT_PATH"],
+            row["REPRESENTATION_PARAMS"].get("joined_lookup"))
+        for row in selected_rows}
+    qa_check(selected_contract == expected_contract and len(selected_rows) == 2,
              "QA_CATALOG_EXTENSION_CONTRACT_MISMATCH")
     metrics = {"INFORMATION": qa_extension_metrics(),
                "DPF_REFERENCE": qa_extension_metrics()}
