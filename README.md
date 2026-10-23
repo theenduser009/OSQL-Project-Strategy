@@ -1,5 +1,16 @@
 # OSCAL Copy-and-Run Workbench
 
+## Current environment correction
+
+The owner's Snowflake notebooks are isolated and cannot connect to the private
+Git repository. The available workflow is copy/paste, with separate Source One
+and Source Two mapping CSVs and existing SQL recipes/registry. Git-import
+installation instructions are withdrawn for this environment. No temporary
+mapping generator, new stage or replacement notebook is an established solution.
+The published package/verifier remains an artifact check, not an installed
+daily ETL. Functional deployment changes are held for context reconciliation.
+
+
 ## Persistent daily deployment verification
 
 The private project now has a durable external-file deployment candidate:
