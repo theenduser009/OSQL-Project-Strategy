@@ -62,9 +62,8 @@ def _daily_policy_typed(value):
     raise ValueError("DAILY_WRITE_POLICY_METADATA_TYPE_UNSUPPORTED")
 
 
-def _daily_write_policy_binding(source_inputs, mapping_contexts):
-    """Hash only pinned release semantics, never daily values or observed deltas."""
-    import hashlib as _hashlib
+def _daily_write_policy_metadata(source_inputs, mapping_contexts):
+    """Construct the unchanged pinned release metadata, without reading source rows."""
 
     runtime = {
         "mapper": getattr(build_oscal_graph, "_oscal_mapper_release", None),
@@ -121,13 +120,84 @@ def _daily_write_policy_binding(source_inputs, mapping_contexts):
             "lookup_contracts": contracts,
         })
     routes.sort(key=lambda route: (route["source_key"], route["model"]))
-    payload = _daily_policy_typed({
+    return {
         "schema": _OSCAL_DAILY_POLICY_SCHEMA, "runtime": runtime, "routes": routes,
         "operations": ("INSERT", "UPDATE"), "retirements": False,
-    })
+    }
+
+
+def _daily_write_policy_binding(source_inputs, mapping_contexts):
+    """Hash the same canonical payload; diagnostics never extend its authorization."""
+    return _daily_policy_hash(_daily_write_policy_metadata(source_inputs, mapping_contexts))
+
+# Hash-only metadata is diagnostic evidence, never authorization.
+_OSCAL_DAILY_DIAGNOSTIC_SCHEMA = "oscal-daily-policy-components-v1"
+_OSCAL_DAILY_DIAGNOSTIC_KEYS = frozenset({
+    "OSCAL_VERSION", "SSP_DOCUMENT_VERSION", "IDENTITY_VERSION", "ASSESSMENT_TASK_TITLE",
+    "ASSESSMENT_TASK_TYPE", "ELEMENT_REGISTRY_TABLE", "ENABLE_APPROVED_SSP_CIA_RETIREMENT",
+    "OSCAL_MODEL", "ROOT_PATH", "ROOT_ELEMENT_TYPE", "STORAGE_CONTRACT",
+    "SOURCE_SYSTEM_NAME", "SOURCE_TABLE_NAME", "RAW_TABLE", "TARGET_DIM", "TARGET_FACT",
+    "DIM_PK_COLUMN", "FACT_PK_COLUMN", "NATIVE_CATALOG_EDGE_POLICY", "ONE_TIME_RETIREMENT_SPEC",
+    "version", "release", "elements", "mappings", "reference_groups", "mapping_fingerprint",
+    "options", "report", "native_catalog", "owner_procedure_props", "scalar_array_properties",
+    "ELEMENTS", "ELEMENT_PATHS", "REFERENCE_GROUPS", "REPORT", "RUNTIME_OPTIONS",
+    "LOOKUP_GROUPS", "UNREVIEWED_ROWS", "ROOT_ELEMENT_TYPE", "STORAGE_CONTRACT",
+    "component_contract", "joined_contract", "native_control_contract",
+    "native_control_guid_contract", "owner_procedure_guid_contract",
+    "element_path", "element_type", "parent_path", "level", "process_order", "is_collection",
+    "schema", "runtime", "operations", "retirements",
+})
+
+
+def _daily_policy_hash(value):
+    import hashlib as _hashlib
     return _hashlib.sha256(json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), allow_nan=False
+        _daily_policy_typed(value), sort_keys=True, separators=(",", ":"), allow_nan=False
     ).encode("utf-8")).hexdigest()
+
+
+def _daily_diagnostic_key(name):
+    return name if name in _OSCAL_DAILY_DIAGNOSTIC_KEYS else "sha256:" + _daily_policy_hash(name)
+
+
+def _daily_policy_component_hashes(metadata):
+    """Return metadata hashes and approved structural key labels; never values."""
+    result = {
+        "schema": _OSCAL_DAILY_DIAGNOSTIC_SCHEMA,
+        "binding_sha256": _daily_policy_hash(metadata),
+        "global": {name: _daily_policy_hash(value)
+                   for name, value in metadata.items() if name != "routes"},
+        "routes": {},
+    }
+    for route in metadata["routes"]:
+        token = _daily_policy_hash((route["source_key"], route["model"]))
+        keys = {}
+        for name in ("config", "compiled_plan", "model_contract", "lookup_contracts"):
+            keys[name] = {_daily_diagnostic_key(key): _daily_policy_hash(value)
+                          for key, value in route[name].items()}
+        registry = {}
+        for row in route["registry"]:
+            entry = _daily_policy_hash(row["element_path"])
+            registry[entry] = {_daily_diagnostic_key(key): _daily_policy_hash(value)
+                               for key, value in row.items()}
+        result["routes"][token] = {
+            "components": {name: _daily_policy_hash(value) for name, value in route.items()},
+            "keys": keys, "registry_entries": registry,
+        }
+    return result
+
+
+def _daily_policy_mismatch_diagnostics(pinned, observed, metadata):
+    """Expose only hashes and allowlisted structural labels after a pinned mismatch."""
+    result = {"schema": _OSCAL_DAILY_DIAGNOSTIC_SCHEMA,
+              "expected_binding_sha256": pinned, "observed_binding_sha256": observed}
+    try:
+        result.update(status="BINDING_MISMATCH",
+                      observed_components=_daily_policy_component_hashes(metadata))
+    except Exception:
+        # Never expose raw metadata or exception payloads if diagnostics fail.
+        result["status"] = "COMPONENT_DIAGNOSTICS_UNAVAILABLE"
+    return result
 
 
 def _daily_require_write_policy(source_inputs, mapping_contexts, policy):
@@ -144,9 +214,13 @@ def _daily_require_write_policy(source_inputs, mapping_contexts, policy):
     if (type(pinned) is not str or len(pinned) != 64
             or any(char not in "0123456789abcdef" for char in pinned)):
         raise ValueError("DAILY_WRITE_POLICY_PIN_INVALID")
-    observed = _daily_write_policy_binding(source_inputs, mapping_contexts)
+    metadata = _daily_write_policy_metadata(source_inputs, mapping_contexts)
+    observed = _daily_policy_hash(metadata)
     if observed != pinned:
-        raise ValueError("DAILY_WRITE_POLICY_BINDING_MISMATCH")
+        error = ValueError("DAILY_WRITE_POLICY_BINDING_MISMATCH")
+        error.daily_write_policy_diagnostics = _daily_policy_mismatch_diagnostics(
+            pinned, observed, metadata)
+        raise error
     return {"policy_id": policy["policy_id"], "binding_sha256": pinned,
             "status": "VALIDATED", "operations": ["INSERT", "UPDATE"],
             "retirements_allowed": False}
@@ -301,6 +375,10 @@ def run_oscal_pipeline(source_inputs, mapping_contexts, load_mode="PREVIEW", dai
                       error_message=(str(error) if type(error) is ValueError or isinstance(error, LoadError) or native_reason
                                      else "Operation failed; inspect protected runtime logs."), load_error=details)
         report["writes_executed"] |= details.get("writes_executed") is True
+        if (type(error) is ValueError and error.args == ("DAILY_WRITE_POLICY_BINDING_MISMATCH",)
+                and hasattr(error, "daily_write_policy_diagnostics")):
+            report["daily_write_policy_diagnostics"] = error.daily_write_policy_diagnostics
+            report["failed_route"] = None  # This check compares the complete route set.
         raise PipelineError(report) from None
 
 

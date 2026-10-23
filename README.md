@@ -4,7 +4,7 @@
 
 [Copy Cell 7](notebooks/07_mapper_orchestrator.py) · [Replacement instructions](notebooks/README.md)
 
-This keeps the daily notebook at seven cells. The fixed approved DEV policy supports a single run with automatic calculated counts, existing validation/readback, and no retirements. No separate QA cell or retained preview session is a daily dependency. See the instructions before selecting COMMIT.
+The seven-cell runner now reports hash-only diagnostic details when its fixed approved policy does not match the loaded execution metadata. Keep PREVIEW selected while investigating a mismatch; do not change the approval hash or retry COMMIT. This update preserves the write guards and does not resolve a mismatch by accepting live settings. Follow the linked instructions; no additional cell or repeat value QA is required.
 
 ## Release validation reference
 
