@@ -1,34 +1,29 @@
 # OSCAL Validation
 
-[Current frozen-preview value validation](qa/source_two_scalar_array159_preview_value_qa.py)
+[Current 184-rule frozen-preview validation](qa/source_two_owner_json184_preview_value_qa.py)
 
-After a successful PREVIEW of the matching159-rule release, add one temporary
-Python Cell8 in the same active notebook session. Paste the entire validation
-script and run only Cell8. Leave Cells1–7 unchanged.
+Run this only after PREVIEW of the matching 184-rule release, with selected
+counts 151/7/10/16. [One-cell instructions](qa/source_two_owner_json184_preview_value_qa.md)
+explain the temporary Cell 8 check; leave mapper Cells 1–7 unchanged.
 
-The report prints underneath the cell, with marker
-`SOURCE_TWO_SCALAR_ARRAY159_PREVIEW_VALUE_QA`. The current release requires selected
-rule counts126/7/10/16, `result=PASS`, `error_count=0`, and
-`native_information_criticality.status=CHECKED` and
-`scalar_array_properties.status=CHECKED`. Save the complete output
-privately. The validator also supports older releases; `NOT_ENABLED` does not
-validate the current additions. Missing session state or a failed check stops
-execution.
-
-This script reads the frozen preview; it does not authorize or execute a
-database commit. Raw records, screenshots, identifiers and reports belong in
-your private workspace.
+Require result=PASS, error_count=0 and CHECKED for owner_json_properties,
+default_record_permissions, native_information_criticality and scalar_array_properties. Save output privately.
+This validates frozen values and ownership; it does not authorize or execute a
+database commit. Permission JSON preservation is not OSCAL role creation or
+access enforcement.
 
 ## Earlier checks
 
-These remain reference tools for their own accepted releases:
+These remain reference tools for their own releases:
 
+- [Previous159 audit](qa/source_two_scalar_array159_preview_value_qa.py).
 - [Previous153 audit](qa/source_two_native153_preview_value_qa.py).
 - [Eleven-extension audit](qa/source_two_extensions_preview_value_qa.py).
 - [Earlier sprint audit](qa/source_two_sprint_preview_value_qa.py).
+- [Retained-metadata receipt](qa/retained_preview_review_guard.py).
 - [Artifact verifier](qa/verify_source_two_bulk_extensions.py).
 - [Historical multi-file verifier](qa/verify_source_two_daily_release.py).
 - [Catalog group SQL check](sql/CATALOG_GROUP_KEY_CONTROL_QA.sql).
 
-The historical commit adapter has already been used. Do not rerun it for a new
-release or reuse an earlier approval.
+Do not rerun accepted work to recover context or reuse an earlier commit approval.
+Raw records, screenshots, identifiers and reports belong in your private workspace.
