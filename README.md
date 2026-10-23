@@ -1,4 +1,12 @@
-# OSCAL Validation
+# OSCAL Validation and Notebook Examples
+
+## Current same-cell daily runner
+
+[Copy Cell 7](notebooks/07_mapper_orchestrator.py) · [Replacement instructions](notebooks/README.md)
+
+This keeps the daily notebook at seven cells. The fixed approved DEV policy supports a single run with automatic calculated counts, existing validation/readback, and no retirements. No separate QA cell or retained preview session is a daily dependency. See the instructions before selecting COMMIT.
+
+## Release validation reference
 
 [Current 184-rule frozen-preview validation](qa/source_two_owner_json184_preview_value_qa.py)
 
