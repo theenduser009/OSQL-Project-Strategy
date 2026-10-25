@@ -1,3 +1,11 @@
+# Current package selection
+
+For lifecycle190 use [these instructions](source_two_lifecycle190.md) and [Cell7](source_two_lifecycle190_cell7.py). Matching lifecycle Cells4/6 and CSV are required. Do not substitute it alone into184.
+
+The following instructions are for the accepted184 package only.
+
+---
+
 # Source Two same-cell daily runner
 
 Copy the complete [Cell 7 Python file](https://github.com/theenduser009/OSQL-Project-Strategy/blob/main/notebooks/07_mapper_orchestrator.py) over the existing final Python cell of the matched Source Two notebook. Keep Cells 1–6, the persistent CSV and registry unchanged.

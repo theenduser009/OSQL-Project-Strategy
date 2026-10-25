@@ -1,6 +1,12 @@
 # OSCAL Validation and Notebook Examples
 
-## Current Source Two same-cell daily runner
+## Source Two lifecycle190 daily runner
+
+[Cell7](notebooks/source_two_lifecycle190_cell7.py) · [Installation and execution](notebooks/source_two_lifecycle190.md)
+
+The matched190 package supports stable Source property updates, exact legacy migration and multi-valued member removal under a fixed DEV policy. It requires the matching CSV and Cells4/6; it is not a Cell7-only upgrade from184. Daily execution remains seven cells, with previews and calculated approvals inside Cell7. Full-record inputs, exclusive writing, recovery preparation and native Snowflake acceptance remain deployment requirements.
+
+## Accepted184 same-cell runner
 
 [Copy Cell 7](notebooks/07_mapper_orchestrator.py) · [Replacement instructions](notebooks/README.md)
 
@@ -23,7 +29,7 @@ This validates frozen values and ownership; it does not authorize or execute a
 database commit. Permission JSON preservation is not OSCAL role creation or
 access enforcement.
 
-## Development candidate
+## Earlier190 PREVIEW-only candidate
 
 [Six-field preservation candidate validation](qa/source_two_remaining190_preview_value_qa.md) includes a separate PREVIEW-only Cell 7 and its matching retained-value audit. It requires the matching candidate configuration; the accepted daily runner above remains unchanged.
 
