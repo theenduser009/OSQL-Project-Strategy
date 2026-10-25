@@ -23,6 +23,10 @@ This validates frozen values and ownership; it does not authorize or execute a
 database commit. Permission JSON preservation is not OSCAL role creation or
 access enforcement.
 
+## Development candidate
+
+[Six-field preservation candidate validation](qa/source_two_remaining190_preview_value_qa.md) includes a separate PREVIEW-only Cell 7 and its matching retained-value audit. It requires the matching candidate configuration; the accepted daily runner above remains unchanged.
+
 ## Earlier checks
 
 These remain reference tools for their own releases:
