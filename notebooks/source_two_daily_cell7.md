@@ -1,18 +1,17 @@
 # Shared daily Cell 7
 
-This is the generic runner for the matched seven-cell cleanup release. It selects PREVIEW or COMMIT, calls the shared pipeline, and prints the report.
+This generic runner selects PREVIEW or COMMIT, calls the shared pipeline, and prints its report. Use it with the matching private seven-cell package and its separate source CSVs.
 
-Use it with the matching configuration, compiler, transformations and loader from your private deployment package. A new Cell 7 with an older Cell 6 stops before writing.
+From the accepted seven-cell cleanup package, replace Cells 1, 6 and 7 together. Cells 2–5, both persistent CSVs and the SQL registry are unchanged. A new Cell 7 with an older Cell 6 stops before writing.
 
-From the matched lifecycle195 installation, replace existing Cells 1, 3, 4, 6 and 7. Cells 2 and 5 and the persistent mapping CSV are unchanged. Do not add another permanent cell. Keep the separate source CSVs and existing registry.
+Source and model selection remain explicit in Cell 1. COMMIT selects one separately approved route set; permissions from different route sets are never combined. The new single-source SSP scope permits inserts and updates without retirements. The existing four-route scope keeps its previously reviewed finite lifecycle permissions. Other model combinations remain PREVIEW-only unless separately authorized and tested.
 
-For initial acceptance of the trimmed package, start a fresh DEV session and run Cells 1–7 in PREVIEW. Save the full Cell 7 report privately. No separate daily QA cell or manual change counts are required.
+For an approved direct COMMIT, start fresh, run Cells 1–6, then run Cell 7 in COMMIT mode. Shared EXECUTE_WRITES stays false; the pipeline manages the write configuration internally. No earlier manual PREVIEW, retained notebook state, manual counts or extra QA cell is required. The same invocation builds and validates its graphs, checks every selected route before the first write, and calculates the exact write envelopes automatically.
 
-COMMIT remains limited to the existing approved four-route DEV policy. It validates all routes before the first write and calculates the exact write envelopes within the same invocation. Transactions are per route; a later failure can leave earlier routes committed. Do not blindly retry an unknown or partial outcome.
+A successful write reports COMMITTED_AND_VERIFIED with matching readback for every selected route. Transactions remain per route; a later failure can leave earlier routes committed. Stop on errors, partial execution, unknown outcomes or failed post-commit readback; reconcile the full report before another run.
 
-Complete current-state input records, exclusive writer operation, appropriate target permissions and recoverable targets remain deployment prerequisites. Cloud tests do not establish native Snowflake compatibility or production-scale performance.
+The SSP scope does not add property retirement or identity migration. Replacing or removing an already stored value-based property remains blocked by the existing obsolete-row check. Initial values and unchanged repeats use the existing idempotent loader.
 
-The previous lifecycle195 runner remains available with its original package. Do not mix release files or downgrade code after a committed identity migration.
+Complete current-state input records, exclusive writer operation, appropriate target permissions and recoverable targets remain deployment prerequisites. Cloud tests do not establish native Snowflake compatibility or production-scale performance. Do not downgrade to older code after a committed identity migration.
 
-
-[Open the matching Cell 7](source_two_daily_cell7.py). Replace it only as part of the matched private package described above.
+[Open the matching Cell 7](source_two_daily_cell7.py).
