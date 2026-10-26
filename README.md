@@ -1,5 +1,13 @@
 # OSCAL Validation and Notebook Examples
 
+## Source Two lifecycle195 daily runner
+
+[Cell7](notebooks/source_two_lifecycle195_cell7.py) · [Installation and execution](notebooks/source_two_lifecycle195.md)
+
+Use this runner with the matching lifecycle195 CSV and runtime. It preserves the finite Source property lifecycle and binds the expanded mapping release to its own fixed DEV policy. From the accepted184 runtime, the matched CSV and Cells4/6/7 change; from lifecycle190, the CSV and Cell7 change. Daily execution stays seven cells. Complete current-state records, exclusive writing, privileges, recovery and native Snowflake acceptance remain deployment requirements.
+
+Earlier runners below are version-specific references. Do not mix their policies and CSV releases.
+
 ## Source Two lifecycle190 daily runner
 
 [Cell7](notebooks/source_two_lifecycle190_cell7.py) · [Installation and execution](notebooks/source_two_lifecycle190.md)
