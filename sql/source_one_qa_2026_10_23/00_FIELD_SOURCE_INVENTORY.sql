@@ -1,10 +1,10 @@
--- OSCAL QA scope: 28 named Archer fields in owner's FULL 29-row screenshot.
+-- OSCAL QA scope: all 29 identifiable Archer fields in the full owner screenshot.
 -- Snapshot: 2026-10-23; mapping CSV blob b9f982c445f293f9b5d47cab565194aa29ef8770.
 -- Read-only Snowflake DEV field inventory; NO target equality claim.
 -- Source may have multiple raw snapshots of one Content ID; the count
 -- AMBIGUOUS_SNAPSHOTS identifies that gap rather than choosing silently.
--- Screenshot row 18 is malformed/shifted (not a verifiable Archer field).
--- Screenshot numbered rows 1-17 and 19-29 contain 28 real field names.
+-- 2026-10-26 image correction: screenshot row 18 = INFORMATION_CLASSIFICATION,
+-- a real Archer key, already APPROVED with separate owner-verified 9:9 sample.
 -- The three newly revealed rows 27-29 are POAMS, PPSM, and category.
 -- Ports/protocols field is not in executable CSV; status is a QA flag.
 -- Owner confirmed DUE_DATE (underscore) is authoritative Archer source key;
@@ -36,6 +36,7 @@ WITH field_contract AS (
     ('INTERCONNECTIONS', 'SSP - System Implementation', 'system-security-plan.system-implementation.components[]', 'APPROVED', 'direct', 'omit'),
     ('INTERCONNECTIONS_CONNECTING_INFORMATION_SYSTEM', 'SSP - System Implementation', 'system-security-plan.system-implementation.components[]', 'APPROVED', 'direct', 'omit'),
     ('SAP_INTAKE_FORM_INTERCONNECTIONS', 'SSP - System Implementation', 'system-security-plan.system-implementation.components[]', 'APPROVED', 'direct', 'omit'),
+    ('INFORMATION_CLASSIFICATION', 'System Security Plan', 'system-security-plan.system-characteristics.props[]', 'APPROVED', 'archer-select', 'omit'),
     ('FINDINGS', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'direct', 'preserve'),
     ('RISK_ACCEPTANCE_RBDS', 'Assessment Results', 'assessment-results.results[].props[]', 'APPROVED', 'reference-ids', 'omit'),
     ('PCT_CURRENT_HIGHEST_DEVICE_RISK_THRESHOLD', 'Assessment Results', 'assessment-results.results[].observations[]', 'APPROVED', 'scalar-score', 'omit'),
