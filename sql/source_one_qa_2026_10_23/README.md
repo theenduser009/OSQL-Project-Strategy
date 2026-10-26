@@ -1,12 +1,12 @@
 # Owner's 29-row "Fields are not found" worksheet — QA handoff
 
-**Updated October 23, 2026. Scope:** ONLY the 29 numbered rows visible in the owner's latest full worksheet photograph. This **supersedes** the earlier cropped screenshot interpretation of 25 fields. There are **28 identifiable Archer-name entries** and **one non-field section/structure row #18**. Of the 28, 26 exact names are in the current runtime CSV (including the blocked category), 1 printed spelling difference already resolved by owner (`DUE_DATE` is correct; no alias), 1 key (`PORTS_PROTOCOLS_AND_SERVICES_MANAGEMENT_PPSM`) has no executable CSV row, and `RECOMMENDED_SECURITY_CATEGORY` has a runtime `BLOCKED_IF_POPULATED` row. (Overall, 27 have executable CSV rows when the spelling difference is resolved; among them two are DEFERRED and one BLOCKED.) **Row #18 is not an Archer source field; mark it N/A unless the owner supplies an actual source key.**
+**Corrected October 26, 2026. Scope:** ONLY the 29 numbered Archer-name rows in the owner's updated photograph, not all Source One mappings. **Row #18 is `INFORMATION_CLASSIFICATION`**, correctly shown highlighted green; an earlier October 23 screenshot interpretation calling it a section label is **superseded**. All **29** names are identifiable. **28** resolve to the current executable Source One mapping CSV using the owner-confirmed `DUE_DATE` underscore key (including two `DEFERRED` Profile rows and one `BLOCKED_IF_POPULATED` category); the remaining `PORTS_PROTOCOLS_AND_SERVICES_MANAGEMENT_PPSM` has **no** runtime mapping row. An `APPROVED` row with absent/null source is not a tested value match. No new Snowflake execution or CSV runtime change is implied.
 
 **Current repository evidence:** `theenduser009/Oscal-mapping-strategy`, `simplify-metadata-boundary`, code inspected at `8fb070c2f783b7c76d56552f1f488cee5a4f6f41`; exact `Mapping/ARCHER_OSCAL_MAPPINGS.csv` blob `b9f982c445f293f9b5d47cab565194aa29ef8770`. The repository's runtime CSV, not older worksheet paths, is the executable mapping contract. This SQL pack performs **read-only** DEV checks; publication isn't live Snowflake execution or COMMIT acceptance.
 
 ## Single handoff for QA
 
-**Start with [00_FIELD_SOURCE_INVENTORY.sql](00_FIELD_SOURCE_INVENTORY.sql)** for 28 named rows using the owner-confirmed `DUE_DATE` key (not a `DUE-DATE` alias). Then use each focused SQL below to prove persisted path/value equality. Returning `SOURCE_KEY_ABSENT` or explicit null is not a failed *populated* mapping; `TARGET_PRESENT` without value/identity parity isn't a PASS.
+**Use [00_FIELD_SOURCE_INVENTORY.sql](00_FIELD_SOURCE_INVENTORY.sql)** for all 29 named rows using owner-confirmed `DUE_DATE` (not a `DUE-DATE` alias). Then use each focused SQL below to prove persisted path/value equality. Returning `SOURCE_KEY_ABSENT` or explicit null is not a failed *populated* mapping; `TARGET_PRESENT` without value/identity parity isn't a PASS.
 
 ## Exact screenshot rows, preserved in order
 
@@ -29,11 +29,11 @@
 | 15 | `INTERCONNECTIONS` | APPROVED | SSP implementation.components[] | [SQL](10_SSP_SIX_COMPONENT_REFERENCES.sql) | 4,444/4,444 references matched |
 | 16 | `INTERCONNECTIONS_CONNECTING_INFORMATION_SYSTEM` | APPROVED | SSP implementation.components[] | [SQL](10_SSP_SIX_COMPONENT_REFERENCES.sql) | 352/352 references matched |
 | 17 | `SAP_INTAKE_FORM_INTERCONNECTIONS` | APPROVED | SSP implementation.components[] | [SQL](10_SSP_SIX_COMPONENT_REFERENCES.sql) | Source JSON null; no populated reference to test |
-| 18 | *System Security Plan (section label; not a source key)* | N/A — SECTION LABEL | — | N/A (not a source field) | Malformed screenshot row, no exact Archer field; owner correction needed |
+| 18 | `INFORMATION_CLASSIFICATION` | APPROVED | SSP characteristics.props[] | [SQL](../SSP_INFORMATION_CLASSIFICATION_TWO_VALUES_QA.sql) | Owner-verified 9 source classifications / 9 target props for Content ID 6211247 (2026-10-23); not all-record proof |
 | 19 | `FINDINGS` | APPROVED | Assessment Results results.props[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending; CSV maps to result props, not native findings[] |
 | 20 | `RISK_ACCEPTANCE_RBDS` | APPROVED | Assessment Results results.props[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending; preserve cross-reference ContentId |
-| 21 | `PCT_CURRENT_HIGHEST_DEVICE_RISK_THRESHOLD` | APPROVED | Assessment Results results.observations[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending observations[] value QA |
-| 22 | `PCT_CURRENT_AVERAGE_DEVICE_RISK_THRESHOLD` | APPROVED | Assessment Results results.observations[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending observations[] value QA |
+| 21 | `PCT_CURRENT_HIGHEST_DEVICE_RISK_THRESHOLD` | APPROVED | Assessment Results results.observations[] | [Exact-key QA](../source_one_qa_2026_10_26/01_PCT_RISK_THRESHOLD_EXACT_KEY_VS_HELPER_QA.sql) | Check whether exact source key is absent, explicit JSON null or populated; distinct _CURRENT_* fields are NOT aliases |
+| 22 | `PCT_CURRENT_AVERAGE_DEVICE_RISK_THRESHOLD` | APPROVED | Assessment Results results.observations[] | [Exact-key QA](../source_one_qa_2026_10_26/01_PCT_RISK_THRESHOLD_EXACT_KEY_VS_HELPER_QA.sql) | Check whether exact source key is absent, explicit JSON null or populated; distinct _CURRENT_* fields are NOT aliases |
 | 23 | `RISK_ASSESSMENT_REPORT` | APPROVED | Assessment Results results.props[] | [SQL](20_AR_SIX_FIELD_VALUE_QA.sql) | Pending JSON-text attachment-ID QA |
 | 24 | `DUE_DATE` (owner-confirmed; screenshot printed `DUE-DATE`) | APPROVED — current omit, candidate preserve | Assessment Results results.props[] | [SQL](92_AR_DUE_DATE_AND_REPORT_NULL_PRESERVATION_QA.sql) | `DUE_DATE` exact Archer key confirmed; PR #17 preserves explicit null after new approval/COMMIT, not yet deployed |
 | 25 | `ADD_OVERLAY` | DEFERRED | Multiple — see notes | [SQL](60_PROFILE_TWO_DEFERRED_FIELDS_SOURCE_ONLY.sql) | DEFERRED; source-only; cannot target PASS |
@@ -66,6 +66,14 @@
 The owner confirmed the exact source key is `DUE_DATE` (underscore). The existing current baseline `20_AR_SIX_FIELD_VALUE_QA.sql` still reflects the **previous** blank/default-omit policies for DUE_DATE and RISK_ASSESSMENT_REPORT. A separate [read-only candidate acceptance query](92_AR_DUE_DATE_AND_REPORT_NULL_PRESERVATION_QA.sql) is available for use **after a reviewed matching-release PREVIEW/COMMIT**, not as evidence that current Snowflake has already changed.
 
 The source/mapping change is isolated in private draft [PR #17](https://github.com/theenduser009/Oscal-mapping-strategy/pull/17), not merged or deployed. It adds `NULL_POLICY=preserve` for these two approved result-level props; `FINDINGS` already preserves nulls, and component/relation fields intentionally omit null references with no identity. A quoted worksheet `DUE-DATE` literal does not authorize a second alias.
+
+## October 26, 2026 — device risk percentage-threshold source-key investigation
+
+Both `PCT_CURRENT_HIGHEST_DEVICE_RISK_THRESHOLD` and `PCT_CURRENT_AVERAGE_DEVICE_RISK_THRESHOLD` are **APPROVED** for `assessment-results.results[].observations[]` in the current runtime CSV (SHA `b9f982c445f293f9b5d47cab565194aa29ef8770`). However, **that is metadata approval, not proof of populated Archer values**. The distinct keys `_CURRENT_HIGHEST_DEVICE_RISK_THRESHOLD` and `_CURRENT_AVERAGE_DEVICE_RISK_THRESHOLD` are separately mapped and may not be silently substituted.
+
+[Read-only comparison of exact PCT keys versus underscore keys, with source-state counts and persisted DIM observation counts](../source_one_qa_2026_10_26/01_PCT_RISK_THRESHOLD_EXACT_KEY_VS_HELPER_QA.sql). **No live Snowflake execution yet**; the owner reports the two PCT fields missing but supplied no current per-key state counts in this photograph.
+
+The approved six-field [Assessment Results detailed value QA](20_AR_SIX_FIELD_VALUE_QA.sql) remains available after exact source population is established. **Do not edit CSV, redirect thresholds to underscore fields, or call target mapping broken** until actual source shape, owner field identity, and current notebook/version evidence support the change.
 
 ## Minimum acceptance rules to tell the QA team
 
