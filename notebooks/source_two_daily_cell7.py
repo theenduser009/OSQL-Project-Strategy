@@ -1,7 +1,7 @@
 # %% Cell 7 - Run the mapping
 OSCAL_LOAD_MODE = "PREVIEW"  # COMMIT preflights the exact approved route set in this invocation.
 
-if getattr(globals().get("run_oscal_pipeline"), "_oscal_pipeline_release", None) != "oscal-seven-cell-metadata-authority-v1":
+if getattr(globals().get("run_oscal_pipeline"), "_oscal_pipeline_release", None) != "oscal-seven-cell-registry-authority-v1":
     raise ValueError("Run the matching Cell 6 before Cell 7")
 _routes = {(context["source_key"], context["config"]["OSCAL_MODEL"]) for context in MAPPING_CONTEXTS}
 _scopes = [scope for scope in _daily_write_scopes()
