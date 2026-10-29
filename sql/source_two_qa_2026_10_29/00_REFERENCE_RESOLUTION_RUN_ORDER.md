@@ -4,6 +4,41 @@
 
 The goal is to resolve `{ContentId, LevelId}` to the *specific Archer record and its business attributes* and then separately verify the associated OSCAL relationship. Do not treat a shared OSCAL property name, a preserved JSON array, or a target Content ID match as proof of full mapping.
 
+## Reusable reference enrichment — new implementation candidate, October 29
+
+**The existing 593-line Matillion raw-to-curated converter is unchanged.**
+A new isolated, optional post-curation candidate is on private
+`theenduser009/Oscal-mapping-strategy` branch
+`work/archer-generic-reference-enrichment-2026-10-29`.
+It never executes automatically merely because the SQL is in GitHub.
+
+1. [SQL 25: generic Archer reference discovery](25_GENERIC_ARCHER_REFERENCE_DISCOVERY.sql)
+   inventories **all structured `{ContentId,LevelId}` references** found
+   recursively in four Source Two RAW tables, and separately lists numeric
+   arrays as **unclassified candidates**. It does not assume numeric arrays
+   are record references.
+2. [SQL 26: generic enrichment read-only DEV preview](26_GENERIC_ARCHER_REFERENCE_ENRICHMENT_PREVIEW.sql)
+   displays the proposed additive `_OSCAL_RESOLVED_RECORD_REFERENCES`
+   sidecar and both ORIGINAL_CURATED_JSON and a candidate with the sidecar
+   removed for equality comparison. Source Two SOURCE RAW is the default
+   preview; use the exact other verified RAW table in all occurrences to
+   preview Topic, Section or Sub-Section.
+3. The private candidate's strict registry currently recognizes **eight
+   source-table + field contracts** for two verified application levels:
+   Policy Level 3 (`5`) and Control Procedures (`39`). It batches distinct
+   referenced IDs, requires one exact RAW target and populated business name,
+   rejects ambiguous/missing values, and leaves the entire owner unchanged
+   if any contracted reference fails. Existing sidecar keys are not replaced.
+   All other fields are discoveries only until verified and added to contracts.
+
+**Status:** GitHub published/read-back verified, review-only candidate. No
+assistant-run Snowflake SQL, DEV PREVIEW, warehouse write, Matillion deployment
+or OSCAL load. Do not rerun accepted Oct 27/28 commits. Only after a
+clean DEV preview and owner review should the **separate** Matillion step be
+eligible for deployment. The original converter retains both of its
+`CURATED_JSON IS NULL` guards; the additive step instead handles
+already-curated OBJECT rows.
+
 ## October 29 — SQL23 Policy Level 3 direct Sub-Section readback: passed
 
 **New owner-executed Snowflake screenshots (October 29, 2026)** from
