@@ -4,6 +4,16 @@
 
 The goal is to resolve `{ContentId, LevelId}` to the *specific Archer record and its business attributes* and then separately verify the associated OSCAL relationship. Do not treat a shared OSCAL property name, a preserved JSON array, or a target Content ID match as proof of full mapping.
 
+## Latest owner Snowflake evidence — Policy Level 3 (October 29)
+
+**Policy Level 3 lookup is now proven in the owner-run snapshot.**
+- `ARCHER_META_LEVEL.LEVEL_ID=5` resolves to Policy Level 3, module `POLICIES` (65).
+- The matching physical policy table is `RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_POLICIES_POLICY_LEVEL_3_RAW`. Level 1 and Level 2 tables are not interchangeable for these LevelId=5 references.
+- SQL22 Query 2 returned **13,278** reference occurrences: **10,929** valid structured LevelId=5 objects matched to `ARCHER_META_CONTENT` with **0 unmatched**, and **2,349** Sub-Section `POLICY_LEVEL_3` array items marked invalid by the *object-only* predicate. This is a shape limitation, not yet evidence those 2,349 are broken policy IDs.
+- SQL22 Query 4 returned actual Policy Level 3 business names/numbers for the inspected matching policy records. This establishes Archer RAW business-value resolution for the sampled objects, **not** the native OSCAL semantic relationship.
+- **Current next run: [SQL23](23_POLICY_LEVEL3_DIRECT_SCALAR_AND_STRUCTURED_REFERENCE_QA.sql), Query 01 then 02.** It profiles the direct Sub-Section array and tests numeric candidates against the exact L3 `_RAW` table. Its third query displays sampled source-to-policy names. If source-to-record coverage passes, continue to [SQL11](11_SAME_FIELD_COMPONENT_POLICY_LEVEL.sql) for field-specific persisted Component Definition prop attribution.
+- The earlier Control Procedures LevelId=39 coverage SQL is a different scope; it should not be rerun to solve Policy Level 3.
+
 ## October 29 — Policy Level 1/2/3 RAW-only table discovery
 
 The policy-table searches in
@@ -13,13 +23,12 @@ The policy-table searches in
 were narrowed to tables with names conforming to
 `ARCHER_CONTENT_POLICIES_(POLICY_)?LEVEL_[123]_RAW`.
 They now exclude `_STG`, `_TMP`, `_BASE`, and other similarly named
-objects; the exact live physical Level 3 table name still must be confirmed
-from Query 3 output before running SQL22 Query 4.
+objects. Owner's October 29 Snowflake screenshot later established the
+exact Level 3 table as `RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_POLICIES_POLICY_LEVEL_3_RAW`.
 
-**Next:** If Query 2's reference coverage is clean and Query 3 identifies the
-real Level 3 RAW table, run Query 4 for source-owner -> referenced policy record
--> policy name/number/purpose. A matched record does **not** prove the OSCAL
-semantic relationship has been implemented.
+**Historical run order (already executed in owner snapshots):** SQL22 Query 2, 3, 4.
+They established structured reference matches, the exact Level 3 RAW table and
+sampled business names; these do **not** prove a native OSCAL semantic relationship.
 
 ## Begin here
 
