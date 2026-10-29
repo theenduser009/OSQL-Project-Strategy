@@ -1,9 +1,8 @@
--- 2026-10-29 | READ-ONLY DEV preview derived from current private generic
--- candidate at work/archer-generic-reference-enrichment-2026-10-29, not deployed or Snowflake-compiled.
--- Source Two SOURCE RAW selected for this first preview. For Topic/Section/
--- Sub-Section change the verified table name in all occurrences.
--- The candidate is ADDITIVE; ORIGINAL_CURATED_JSON must match
--- CANDIDATE_WITH_SIDECAR_REMOVED. No UPDATE in this public SQL file.
+-- October 29, 2026. Read-only PREVIEW of generic Archer reference enrichment.
+-- Pin to private branch work/archer-generic-reference-enrichment-2026-10-29; no DML here.
+-- SOURCE RAW is the first sample: to validate Topic/Section/Sub-Section,
+-- replace the exact source RAW table name throughout this SELECT.
+-- Original JSON must equal CANDIDATE_WITH_SIDECAR_REMOVED by field/value.
 WITH contracts (SOURCE_TABLE_NAME,FIELD_NAME,TARGET_LEVEL_ID,REFERENCE_KIND) AS (
    SELECT COLUMN1,COLUMN2,COLUMN3,COLUMN4 FROM VALUES
      ('ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SOURCE_RAW',
@@ -34,10 +33,12 @@ WITH contracts (SOURCE_TABLE_NAME,FIELD_NAME,TARGET_LEVEL_ID,REFERENCE_KIND) AS 
  fields AS (
    SELECT s.OWNER_CONTENT_ID,s.J,c.FIELD_NAME,c.TARGET_LEVEL_ID,
           c.REFERENCE_KIND,f.VALUE AS REF_ARRAY
-   FROM owners s,LATERAL FLATTEN(INPUT=>s.J) f
-   JOIN contracts c ON c.FIELD_NAME=f.KEY::VARCHAR
-                   AND c.SOURCE_TABLE_NAME=s.SOURCE_TABLE_NAME
+   FROM owners s,
+        LATERAL FLATTEN(INPUT=>s.J) f,
+        contracts c
    WHERE s.OWNER_ID_ROWS=1
+     AND c.FIELD_NAME=f.KEY::VARCHAR
+     AND c.SOURCE_TABLE_NAME=s.SOURCE_TABLE_NAME
  ),
  items AS (
    SELECT f.OWNER_CONTENT_ID,f.FIELD_NAME,f.TARGET_LEVEL_ID,
