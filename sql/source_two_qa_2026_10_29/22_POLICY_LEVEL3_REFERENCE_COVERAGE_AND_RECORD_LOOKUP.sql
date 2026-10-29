@@ -103,7 +103,7 @@ WITH columns_by_table AS (
    -- The optional POLICY_ allows both common physical naming conventions,
    -- but the anchored suffix excludes STG, TMP, BASE and archival variants.
    AND REGEXP_LIKE(UPPER(TABLE_NAME),
-       '^ARCHER_CONTENT_POLICIES_(POLICY_)?LEVEL_[123]_RAW
+       '^ARCHER_CONTENT_POLICIES_(POLICY_)?LEVEL_[123]_RAW$')
  GROUP BY 1,2,3
 )
 SELECT TABLE_CATALOG,TABLE_SCHEMA,TABLE_NAME
