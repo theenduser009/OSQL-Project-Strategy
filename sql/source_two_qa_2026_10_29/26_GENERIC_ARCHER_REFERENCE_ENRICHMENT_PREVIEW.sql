@@ -1,11 +1,9 @@
--- 2026-10-29 | READ-ONLY DEV preview of generic Archer reference enrichment.
--- Derived from private isolated review candidate (NOT DEPLOYED).
--- To test Topic/Section/Sub-Section, replace the one source RAW table name
--- throughout the query with the exact _RAW table (never _STG/_TMP).
--- The same SQL accepts only 8 whitelisted source-table+field contracts.
--- Examine ORIGINAL_CURATED_JSON against CANDIDATE_WITH_SIDECAR_REMOVED:
--- all original keys/values must remain identical after removing sidecar.
--- Preview statuses are not proof that SQL is compiled/warehouse-tested.
+-- 2026-10-29 | READ-ONLY DEV preview derived from current private generic
+-- candidate at work/archer-generic-reference-enrichment-2026-10-29, not deployed or Snowflake-compiled.
+-- Source Two SOURCE RAW selected for this first preview. For Topic/Section/
+-- Sub-Section change the verified table name in all occurrences.
+-- The candidate is ADDITIVE; ORIGINAL_CURATED_JSON must match
+-- CANDIDATE_WITH_SIDECAR_REMOVED. No UPDATE in this public SQL file.
 WITH contracts (SOURCE_TABLE_NAME,FIELD_NAME,TARGET_LEVEL_ID,REFERENCE_KIND) AS (
    SELECT COLUMN1,COLUMN2,COLUMN3,COLUMN4 FROM VALUES
      ('ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SOURCE_RAW',
@@ -52,18 +50,27 @@ WITH contracts (SOURCE_TABLE_NAME,FIELD_NAME,TARGET_LEVEL_ID,REFERENCE_KIND) AS 
    FROM fields f,LATERAL FLATTEN(
      INPUT=>IFF(IS_ARRAY(f.REF_ARRAY),f.REF_ARRAY,ARRAY_CONSTRUCT())) x
  ),
+ needed_ids AS (
+   SELECT DISTINCT TARGET_LEVEL_ID,REF_CONTENT_ID
+   FROM items
+   WHERE REGEXP_LIKE(COALESCE(REF_CONTENT_ID,''),'^[1-9][0-9]*$')
+ ),
  target_rows AS (
-   SELECT '5' AS LEVEL_ID,CONTENT_ID::VARCHAR AS REF_CONTENT_ID,
-          CURATED_JSON:POLICY_LEVEL_3_NAME::VARCHAR AS BUSINESS_NAME,
-          CURATED_JSON:POLICY_NUMBER::VARCHAR AS BUSINESS_ID,
-          CURATED_JSON IS NOT NULL AS HAS_JSON
-   FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_POLICIES_POLICY_LEVEL_3_RAW
+   SELECT '5' AS LEVEL_ID,p.CONTENT_ID::VARCHAR AS REF_CONTENT_ID,
+          p.CURATED_JSON:POLICY_LEVEL_3_NAME::VARCHAR AS BUSINESS_NAME,
+          p.CURATED_JSON:POLICY_NUMBER::VARCHAR AS BUSINESS_ID,
+          p.CURATED_JSON IS NOT NULL AS HAS_JSON
+   FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_POLICIES_POLICY_LEVEL_3_RAW p
+   WHERE p.CONTENT_ID::VARCHAR IN
+      (SELECT REF_CONTENT_ID FROM needed_ids WHERE TARGET_LEVEL_ID='5')
    UNION ALL
-   SELECT '39',CONTENT_ID::VARCHAR,
-          CURATED_JSON:CONTROL_PROCEDURE_NAME::VARCHAR,
-          CURATED_JSON:CONTROL_PROCEDURE_ID::VARCHAR,
-          CURATED_JSON IS NOT NULL
-   FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_CONTROL_PROCEDURES_RAW
+   SELECT '39',p.CONTENT_ID::VARCHAR,
+          p.CURATED_JSON:CONTROL_PROCEDURE_NAME::VARCHAR,
+          p.CURATED_JSON:CONTROL_PROCEDURE_ID::VARCHAR,
+          p.CURATED_JSON IS NOT NULL
+   FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_CONTROL_PROCEDURES_RAW p
+   WHERE p.CONTENT_ID::VARCHAR IN
+      (SELECT REF_CONTENT_ID FROM needed_ids WHERE TARGET_LEVEL_ID='39')
  ),
  targets AS (
    SELECT LEVEL_ID,REF_CONTENT_ID,COUNT(*) AS MATCH_COUNT,
