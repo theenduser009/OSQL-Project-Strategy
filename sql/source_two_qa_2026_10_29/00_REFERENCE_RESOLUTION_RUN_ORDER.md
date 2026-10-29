@@ -4,6 +4,36 @@
 
 The goal is to resolve `{ContentId, LevelId}` to the *specific Archer record and its business attributes* and then separately verify the associated OSCAL relationship. Do not treat a shared OSCAL property name, a preserved JSON array, or a target Content ID match as proof of full mapping.
 
+## October 29 — SQL23 Policy Level 3 direct Sub-Section readback: passed
+
+**New owner-executed Snowflake screenshots (October 29, 2026)** from
+[SQL 23](23_POLICY_LEVEL3_DIRECT_SCALAR_AND_STRUCTURED_REFERENCE_QA.sql):
+- Sub-Section direct `POLICY_LEVEL_3` has **2,349 INTEGER items**, across
+  **818** owner records and **131** distinct candidate Content IDs. All **2,349**
+  are positive numeric identifiers, match a UNIQUE
+  `ARCHER_CONTENT_POLICIES_POLICY_LEVEL_3_RAW.CONTENT_ID`, and show no
+  unmatched/duplicate-target/missing-target-CURATED_JSON occurrences.
+- Combining direct numeric Sub-Section items with Source/Topic/Section inherited
+  `{ContentId,LevelId=5}` objects yields **13,278/13,278** unique Level 3
+  RAW target matches and **13,278** matched occurrences with nonblank policy
+  names; **0** unsupported shapes, unmatched IDs, ambiguous target IDs or
+  missing target JSON across the reported rows. **131 distinct referenced
+  Policy Level 3 IDs** in total.
+- The Sub-Section source items have no `LevelId` member. The target is
+  established by the exact unique Level 3 RAW lookup, **not** by pretending
+  those source items carried `LevelId=5`. Preserve that distinction.
+- SQL 23 Query 3 owner screenshot returned sampled names/numbers for
+  Sub-Section Content IDs. This verifies Archer source-to-policy business-value
+  resolution, **not** OSCAL semantic links or completed end-to-end mapping.
+
+**DO NOT rerun SQL22 or SQL23 for the same DEV snapshot.**
+**NEXT:** [SQL 11 — field-scoped Source/Topic Component Definition property QA](11_SAME_FIELD_COMPONENT_POLICY_LEVEL.sql),
+then inspect the actual OSCAL source/target value parity and distinguish the
+direct `POLICY_LEVEL_3` field from derived descendant reference arrays.
+Existing Source/Topic Component Definition commits were owner readback verified
+October 28, but Section/Sub-Section Component Definition commits were not
+established; do not misreport a missing property there as a failed committed route.
+
 ## Latest owner Snowflake evidence — Policy Level 3 (October 29)
 
 **Policy Level 3 lookup is now proven in the owner-run snapshot.**
