@@ -1,5 +1,13 @@
 # OSCAL Validation and Notebook Examples
 
+## Kobai ontology — single document
+
+[Open YAML](ontology/kobai/oscal_kobai_single_document.yaml) · [Open JSON](ontology/kobai/oscal_kobai_single_document.json)
+
+These are equivalent formats of one self-contained OSCAL ontology specification. Each contains all five domains, concepts, properties, relationships, reviewed field mappings, and the embedded logical binding contract. Choose one format; a separate ontology-bindings file is not required.
+
+**Status: project specification; native Kobai import remains unverified.** Local structure and binding checks are not a native importer acceptance result. The files retain this status explicitly. They contain schema and mapping metadata, not business-instance records or credentials.
+
 ## Source Two lifecycle195 daily runner
 
 [Cell7](notebooks/source_two_lifecycle195_cell7.py) · [Installation and execution](notebooks/source_two_lifecycle195.md)
