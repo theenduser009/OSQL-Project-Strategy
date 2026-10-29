@@ -4,10 +4,9 @@
 -- LevelId=39 or control-procedure table for Policy Level 3.
 -- Owner Snowflake 2026-10-29 verified ARCHER_META_LEVEL:
 -- LevelId=5 -> POLICY - LEVEL 3, ModuleId=65, Module=POLICIES.
--- The physical Policy Level 3 RAW table is not established in this chat;
--- Query 3 finds it; replace the Query 4 explicit IDENTIFIER placeholder
--- using the real table name from the SQL16 query that successfully found
--- policy records. Do not guess or claim resolved names on missing fields.
+-- Query 3 finds only Archer Content Policies Level 1/2/3 _RAW.
+-- Query 4 must use the verified Level 3 _RAW table, not Level 1/2.
+-- The exact physical Level 3 name remains to be confirmed in DEV.
 -- Critical distinction: Source/Topic/Section use descendant ROLLUP fields;
 -- Sub-Section uses directly-owned POLICY_LEVEL_3. Deduplicate business links
 -- only after defining direct vs inherited relationship semantics.
@@ -90,17 +89,15 @@ LEFT JOIN meta_ids m ON r.VALID_LEVEL5_REFERENCE
 GROUP BY ROLLUP(r.SOURCE_LEVEL)
 ORDER BY GROUPING(r.SOURCE_LEVEL),SOURCE_LEVEL;
 
--- QUERY 03: Discover physical policy record table candidates, with the
--- actual contents of the information schema, not guessed table names.
+-- QUERY 03: Only the Policy Level 1/2/3 production _RAW tables.
+-- Anchored prefix and terminal _RAW exclude _STG, _STAGE, _TMP,
+-- _BASE and unsuffixed copies. Do not broaden if zero results.
 WITH columns_by_table AS (
  SELECT TABLE_CATALOG,TABLE_SCHEMA,TABLE_NAME,
         COUNT_IF(UPPER(COLUMN_NAME)='CONTENT_ID') AS HAS_CONTENT_ID,
         COUNT_IF(UPPER(COLUMN_NAME)='CURATED_JSON') AS HAS_CURATED_JSON
  FROM RTX_RAW_DEV.INFORMATION_SCHEMA.COLUMNS
  WHERE TABLE_SCHEMA='ES_ESC_GRC'
-   -- ONLY the three Policy Levels 1/2/3 production RAW tables.
-   -- Exact anchored suffix excludes STG, TMP, BASE, and any non-RAW variants.
-   -- Accepts a POLICY_ segment when that is part of the physical table name.
    AND REGEXP_LIKE(UPPER(TABLE_NAME),
        '^ARCHER_CONTENT_POLICIES_(POLICY_)?LEVEL_[123]_RAW$')
  GROUP BY 1,2,3
@@ -112,9 +109,9 @@ ORDER BY TABLE_NAME;
 
 -- QUERY 04: Exact source -> REAL Policy Level 3 CURATED_JSON record.
 -- REQUIRED: Replace the IDENTIFIER placeholder with the exact, verified
--- Policy Level 3 table returned by Query 3 and the SQL16-generated lookup.
--- Only choose a Level 3 _RAW table from Query 3 (not Level 1, Level 2 or STG).
--- Query 4 is NOT executable until this table identifier is supplied.
+-- Only use the verified Level 3 _RAW table from Query 3.
+-- Never use Level 1/2 or _STG/_STAGE/_TMP/unsuffixed tables.
+-- Query 4 requires the verified physical identifier.
 -- IMPORTANT: name fields are only CANDIDATES. Owner saw a previous record
 -- whose POLICY_LEVEL_3_NAME was NULL; do not invent a fallback identity.
 WITH source_fields AS (
