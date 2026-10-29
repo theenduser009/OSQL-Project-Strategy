@@ -4,6 +4,23 @@
 
 The goal is to resolve `{ContentId, LevelId}` to the *specific Archer record and its business attributes* and then separately verify the associated OSCAL relationship. Do not treat a shared OSCAL property name, a preserved JSON array, or a target Content ID match as proof of full mapping.
 
+## October 29 — Policy Level 1/2/3 RAW-only table discovery
+
+The policy-table searches in
+[SQL 22](22_POLICY_LEVEL3_REFERENCE_COVERAGE_AND_RECORD_LOOKUP.sql),
+[SQL 19](19_ARCHER_CONTENTID_LEVELID_METADATA_RECORD_LOOKUP.sql), and
+[SQL 16](16_POLICY_LEVEL5_META_AND_RECORD_RESOLVER.sql)
+were narrowed to tables with names conforming to
+`ARCHER_CONTENT_POLICIES_(POLICY_)?LEVEL_[123]_RAW`.
+They now exclude `_STG`, `_TMP`, `_BASE`, and other similarly named
+objects; the exact live physical Level 3 table name still must be confirmed
+from Query 3 output before running SQL22 Query 4.
+
+**Next:** If Query 2's reference coverage is clean and Query 3 identifies the
+real Level 3 RAW table, run Query 4 for source-owner -> referenced policy record
+-> policy name/number/purpose. A matched record does **not** prove the OSCAL
+semantic relationship has been implemented.
+
 ## Begin here
 
 1. **[SQL 20 — confirm Level IDs and Control Procedures references](20_LEVEL5_LEVEL39_CONTROL_PROCEDURE_REFERENCE_QA.sql)** — Four runnable, standalone SELECTs. Run Query 01 first to check actual `ARCHER_META_LEVEL` metadata for Level IDs `5` and `39`. Run Query 02 for **`RELATED_CONTROL_PROCEDURES` across Source, Topic, Section, Sub-Section** versus the verified physical table name `ARCHER_CONTENT_CONTROL_PROCEDURES_RAW`. It reports invalid IDs, wrong levels, missing targets, duplicates and missing curated JSON. Run Query 03 for **per-origin Content ID lineage**, then Query 04 for candidate populated target business fields.
