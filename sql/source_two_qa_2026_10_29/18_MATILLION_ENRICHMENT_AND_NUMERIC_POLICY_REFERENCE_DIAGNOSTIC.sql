@@ -119,15 +119,33 @@ SELECT COUNT(DISTINCT CONTENT_ID) AS SOURCE_RECORDS,
                 AND ARRAY_SIZE(V:ResolvedGroups)>0) AS GROUP_ENRICHED_FIELDS
 FROM fields;
 
--- Query 4: Optional execution evidence for recent UPDATEs, subject to the
--- Snowsight role's query-history visibility. Seven days only; no row != no run.
--- For older runs check Matillion job history and Snowflake account usage.
-SELECT QUERY_ID, START_TIME, QUERY_TYPE, EXECUTION_STATUS, ROWS_UPDATED,
+-- Query 4A (read-only): Snowflake QUERY_HISTORY from the CURRENT
+-- DB's fully-qualified information schema. It searches last 7 days and is
+-- subject to visibility of the active role. It can MISS Matillion service
+-- user UPDATEs that the active role is not permitted to monitor.
+-- Official Snowflake QUERY_HISTORY table function supports 7 days max.
+-- Zero rows does NOT prove Matillion did not run.
+SELECT QUERY_ID, START_TIME, QUERY_TYPE, EXECUTION_STATUS,
        LEFT(QUERY_TEXT,300) AS QUERY_TEXT_PREVIEW
-FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY(
-  END_TIME_RANGE_START => DATEADD('DAY',-7,CURRENT_TIMESTAMP()),
-  RESULT_LIMIT => 10000))
-WHERE QUERY_TYPE='UPDATE'
+FROM TABLE(RTX_RAW_DEV.INFORMATION_SCHEMA.QUERY_HISTORY(
+  END_TIME_RANGE_START => DATEADD('HOUR',-24,CURRENT_TIMESTAMP()),
+  RESULT_LIMIT => 10000
+))
+WHERE QUERY_TEXT ILIKE '%CURATED_JSON%'
+  AND QUERY_TYPE IN ('UPDATE','MERGE')
+ORDER BY START_TIME DESC
+LIMIT 100;
+
+-- Query 4B (OPTIONAL alternate): broader ACCOUNT_USAGE coverage for up
+-- to 365 days, only if current role can SELECT SNOWFLAKE.ACCOUNT_USAGE.
+-- This view has data latency, and a SELECT error may mean missing grants.
+-- Does not establish deployed Matillion SQL unless query text/run ID matches.
+SELECT QUERY_ID, START_TIME, QUERY_TYPE, EXECUTION_STATUS,
+       ROWS_UPDATED, USER_NAME, ROLE_NAME,
+       LEFT(QUERY_TEXT,300) AS QUERY_TEXT_PREVIEW
+FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+WHERE START_TIME >= DATEADD('DAY',-30,CURRENT_TIMESTAMP())
   AND QUERY_TEXT ILIKE '%CURATED_JSON%'
+  AND QUERY_TYPE IN ('UPDATE','MERGE')
 ORDER BY START_TIME DESC
 LIMIT 100;
