@@ -1,0 +1,132 @@
+-- 2026-10-30 | ALL eligible Archer Content *_RAW tables, not just Source Two.
+-- DEV, READ ONLY. No table writes, no CREATE/UPDATE/MERGE.
+-- Each Snowflake Scripting block runs one dynamic SELECT over ALL live
+-- physical base tables with CONTENT_ID + CURATED_JSON.
+-- Covers Authorization Package automatically if it exists in inventory.
+-- No fixed 4-table whitelist and no assumption that the count is exactly 44.
+-- Excludes staging, temporary, historical, archive and unsuffixed copies.
+-- Q2 structured {ContentId,LevelId} candidates; Q3 numeric arrays are
+-- UNCLASSIFIED until Archer field relationship/target level is verified.
+-- Does NOT substitute unreviewed business names or OSCAL relationships.
+
+-- QUERY 1: actual live base-RAW inventory (returns table names).
+WITH eligible AS (
+ SELECT c.TABLE_CATALOG,c.TABLE_SCHEMA,c.TABLE_NAME
+ FROM RTX_RAW_DEV.INFORMATION_SCHEMA.COLUMNS c
+ JOIN RTX_RAW_DEV.INFORMATION_SCHEMA.TABLES t
+   ON c.TABLE_CATALOG=t.TABLE_CATALOG
+  AND c.TABLE_SCHEMA=t.TABLE_SCHEMA
+  AND c.TABLE_NAME=t.TABLE_NAME
+ WHERE c.TABLE_SCHEMA='ES_ESC_GRC'
+   AND t.TABLE_TYPE='BASE TABLE'
+   AND REGEXP_LIKE(UPPER(c.TABLE_NAME),'^ARCHER_CONTENT_[A-Z0-9_]+_RAW$')
+   AND NOT REGEXP_LIKE(UPPER(c.TABLE_NAME),
+       '(^|_)(STG|STAGE|TMP|TEMP|ARCHIVE|HIST|HISTORY)(_|$)')
+ GROUP BY 1,2,3
+ HAVING COUNT_IF(UPPER(c.COLUMN_NAME)='CONTENT_ID')>0
+    AND COUNT_IF(UPPER(c.COLUMN_NAME)='CURATED_JSON')>0
+)
+SELECT TABLE_CATALOG,TABLE_SCHEMA,TABLE_NAME,COUNT(*) OVER() AS ELIGIBLE_RAW_TABLE_COUNT
+FROM eligible ORDER BY TABLE_NAME;
+
+-- QUERY 2: automatic ALL-table STRUCTURED ContentId/LevelId inventory.
+-- Returns one aggregate row per source RAW table, source field, target level.
+EXECUTE IMMEDIATE $$
+DECLARE
+  statement VARCHAR;
+  resultset RESULTSET;
+BEGIN
+ SELECT LISTAGG(
+     'SELECT ''' || TABLE_NAME || ''' AS SOURCE_TABLE_NAME, ' ||
+     'SPLIT_PART(SPLIT_PART(f.PATH,''['',1),''.'',1) AS SOURCE_FIELD_NAME, ' ||
+     'f.VALUE:LevelId::VARCHAR AS REF_LEVEL_ID, ' ||
+     'COUNT(*) AS REFERENCE_OCCURRENCES, ' ||
+     'COUNT(DISTINCT r.CONTENT_ID::VARCHAR) AS OWNER_RECORDS, ' ||
+     'COUNT(DISTINCT f.VALUE:ContentId::VARCHAR) AS DISTINCT_REFERENCED_IDS ' ||
+     'FROM "' || TABLE_CATALOG || '"."' || TABLE_SCHEMA || '"."' || TABLE_NAME || '" r, ' ||
+     'LATERAL FLATTEN(INPUT=>r.CURATED_JSON,RECURSIVE=>TRUE) f ' ||
+     'WHERE TYPEOF(f.VALUE)=''OBJECT'' ' ||
+     'AND f.VALUE:ContentId IS NOT NULL AND f.VALUE:LevelId IS NOT NULL ' ||
+     'AND NOT STARTSWITH(f.PATH,''_OSCAL_RESOLVED_RECORD_REFERENCES'') ' ||
+     'GROUP BY 1,2,3',
+     ' UNION ALL '
+ ) WITHIN GROUP (ORDER BY TABLE_NAME)
+ INTO :statement
+ FROM (
+   SELECT c.TABLE_CATALOG,c.TABLE_SCHEMA,c.TABLE_NAME
+   FROM RTX_RAW_DEV.INFORMATION_SCHEMA.COLUMNS c
+   JOIN RTX_RAW_DEV.INFORMATION_SCHEMA.TABLES t
+     ON c.TABLE_CATALOG=t.TABLE_CATALOG
+    AND c.TABLE_SCHEMA=t.TABLE_SCHEMA AND c.TABLE_NAME=t.TABLE_NAME
+   WHERE c.TABLE_SCHEMA='ES_ESC_GRC' AND t.TABLE_TYPE='BASE TABLE'
+     AND REGEXP_LIKE(UPPER(c.TABLE_NAME),'^ARCHER_CONTENT_[A-Z0-9_]+_RAW$')
+     AND NOT REGEXP_LIKE(UPPER(c.TABLE_NAME),
+       '(^|_)(STG|STAGE|TMP|TEMP|ARCHIVE|HIST|HISTORY)(_|$)')
+   GROUP BY 1,2,3
+   HAVING COUNT_IF(UPPER(c.COLUMN_NAME)='CONTENT_ID')>0
+      AND COUNT_IF(UPPER(c.COLUMN_NAME)='CURATED_JSON')>0
+ );
+ IF (statement IS NULL) THEN
+    resultset := (SELECT ''::VARCHAR AS SOURCE_TABLE_NAME,
+                       ''::VARCHAR AS SOURCE_FIELD_NAME,
+                       ''::VARCHAR AS REF_LEVEL_ID,
+                       0::NUMBER AS REFERENCE_OCCURRENCES,
+                       0::NUMBER AS OWNER_RECORDS,
+                       0::NUMBER AS DISTINCT_REFERENCED_IDS WHERE FALSE);
+ ELSE
+    resultset := (EXECUTE IMMEDIATE :statement);
+ END IF;
+ RETURN TABLE(resultset);
+END;
+$$;
+
+-- QUERY 3: automatic ALL-table NUMERIC ARRAY candidate inventory.
+-- These are NOT classified as ContentIds until CR/RR field metadata verifies it.
+EXECUTE IMMEDIATE $$
+DECLARE
+  statement VARCHAR;
+  resultset RESULTSET;
+BEGIN
+ SELECT LISTAGG(
+     'SELECT ''' || TABLE_NAME || ''' AS SOURCE_TABLE_NAME, ' ||
+     'f.KEY::VARCHAR AS SOURCE_FIELD_NAME, TYPEOF(x.VALUE) AS MEMBER_TYPE, ' ||
+     'COUNT(*) AS NUMERIC_OCCURRENCES, ' ||
+     'COUNT(DISTINCT r.CONTENT_ID::VARCHAR) AS OWNER_RECORDS, ' ||
+     'COUNT(DISTINCT x.VALUE::VARCHAR) AS DISTINCT_CANDIDATE_IDS ' ||
+     'FROM "' || TABLE_CATALOG || '"."' || TABLE_SCHEMA || '"."' || TABLE_NAME || '" r, ' ||
+     'LATERAL FLATTEN(INPUT=>r.CURATED_JSON) f, ' ||
+     'LATERAL FLATTEN(INPUT=>IFF(IS_ARRAY(f.VALUE),f.VALUE,ARRAY_CONSTRUCT())) x ' ||
+     'WHERE TYPEOF(x.VALUE) IN (''INTEGER'',''DECIMAL'',''VARCHAR'') ' ||
+     'AND REGEXP_LIKE(x.VALUE::VARCHAR,''^[1-9][0-9]*$'') ' ||
+     'AND f.KEY <> ''_OSCAL_RESOLVED_RECORD_REFERENCES'' ' ||
+     'GROUP BY 1,2,3',
+     ' UNION ALL '
+ ) WITHIN GROUP (ORDER BY TABLE_NAME)
+ INTO :statement
+ FROM (
+   SELECT c.TABLE_CATALOG,c.TABLE_SCHEMA,c.TABLE_NAME
+   FROM RTX_RAW_DEV.INFORMATION_SCHEMA.COLUMNS c
+   JOIN RTX_RAW_DEV.INFORMATION_SCHEMA.TABLES t
+     ON c.TABLE_CATALOG=t.TABLE_CATALOG
+    AND c.TABLE_SCHEMA=t.TABLE_SCHEMA AND c.TABLE_NAME=t.TABLE_NAME
+   WHERE c.TABLE_SCHEMA='ES_ESC_GRC' AND t.TABLE_TYPE='BASE TABLE'
+     AND REGEXP_LIKE(UPPER(c.TABLE_NAME),'^ARCHER_CONTENT_[A-Z0-9_]+_RAW$')
+     AND NOT REGEXP_LIKE(UPPER(c.TABLE_NAME),
+       '(^|_)(STG|STAGE|TMP|TEMP|ARCHIVE|HIST|HISTORY)(_|$)')
+   GROUP BY 1,2,3
+   HAVING COUNT_IF(UPPER(c.COLUMN_NAME)='CONTENT_ID')>0
+      AND COUNT_IF(UPPER(c.COLUMN_NAME)='CURATED_JSON')>0
+ );
+ IF (statement IS NULL) THEN
+    resultset := (SELECT ''::VARCHAR AS SOURCE_TABLE_NAME,
+                       ''::VARCHAR AS SOURCE_FIELD_NAME,
+                       ''::VARCHAR AS MEMBER_TYPE,
+                       0::NUMBER AS NUMERIC_OCCURRENCES,
+                       0::NUMBER AS OWNER_RECORDS,
+                       0::NUMBER AS DISTINCT_CANDIDATE_IDS WHERE FALSE);
+ ELSE
+    resultset := (EXECUTE IMMEDIATE :statement);
+ END IF;
+ RETURN TABLE(resultset);
+END;
+$$;
