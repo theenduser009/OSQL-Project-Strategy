@@ -1,8 +1,10 @@
--- October 29, 2026. Read-only PREVIEW of generic Archer reference enrichment.
--- Pin to private branch work/archer-generic-reference-enrichment-2026-10-29; no DML here.
--- SOURCE RAW is the first sample: to validate Topic/Section/Sub-Section,
--- replace the exact source RAW table name throughout this SELECT.
--- Original JSON must equal CANDIDATE_WITH_SIDECAR_REMOVED by field/value.
+-- 2026-10-30 | READ-ONLY DEV preview of nine-contract reference resolver.
+-- Default preview is SOURCE RAW; for Topic/Section/Sub-Section, replace
+-- the full source RAW table name throughout with the exact chosen source.
+-- Verified additions: Topic SECTION_REFERENCES LevelId=8, Section RAW,
+-- SECTION_NAME/SECTION_ID. 10566/10566 matched in owner-run SQL27.
+-- This previews a sidecar; original source references remain unchanged.
+-- This SELECT has not been executed in Snowflake by ChatGPT.
 WITH contracts (SOURCE_TABLE_NAME,FIELD_NAME,TARGET_LEVEL_ID,REFERENCE_KIND) AS (
    SELECT COLUMN1,COLUMN2,COLUMN3,COLUMN4 FROM VALUES
      ('ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SOURCE_RAW',
@@ -15,6 +17,8 @@ WITH contracts (SOURCE_TABLE_NAME,FIELD_NAME,TARGET_LEVEL_ID,REFERENCE_KIND) AS 
       'POLICY_LEVEL_3','5','DIRECT'),
      ('ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SOURCE_RAW',
       'RELATED_CONTROL_PROCEDURES','39','RELATED_RECORD'),
+     ('ARCHER_CONTENT_AUTHORITATIVE_SOURCES_TOPIC_RAW',
+      'SECTION_REFERENCES','8','CHILD_SECTION_REFERENCE'),
      ('ARCHER_CONTENT_AUTHORITATIVE_SOURCES_TOPIC_RAW',
       'RELATED_CONTROL_PROCEDURES','39','RELATED_RECORD'),
      ('ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SECTION_RAW',
@@ -72,6 +76,14 @@ WITH contracts (SOURCE_TABLE_NAME,FIELD_NAME,TARGET_LEVEL_ID,REFERENCE_KIND) AS 
    FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_CONTROL_PROCEDURES_RAW p
    WHERE p.CONTENT_ID::VARCHAR IN
       (SELECT REF_CONTENT_ID FROM needed_ids WHERE TARGET_LEVEL_ID='39')
+   UNION ALL
+   SELECT '8',p.CONTENT_ID::VARCHAR,
+          p.CURATED_JSON:SECTION_NAME::VARCHAR,
+          p.CURATED_JSON:SECTION_ID::VARCHAR,
+          p.CURATED_JSON IS NOT NULL
+   FROM RTX_RAW_DEV.ES_ESC_GRC.ARCHER_CONTENT_AUTHORITATIVE_SOURCES_SECTION_RAW p
+   WHERE p.CONTENT_ID::VARCHAR IN
+      (SELECT REF_CONTENT_ID FROM needed_ids WHERE TARGET_LEVEL_ID='8')
  ),
  targets AS (
    SELECT LEVEL_ID,REF_CONTENT_ID,COUNT(*) AS MATCH_COUNT,
