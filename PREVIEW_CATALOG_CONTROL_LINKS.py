@@ -140,15 +140,14 @@ def install_catalog_control_group_link_preview():
         active_plan = active["compiled_plan"]
         if (active["config"].get("WRITE_ALLOWED") is not False
                 or active["config"].get("EXECUTE_WRITES") is not False
-                or active_plan.get("mapping_fingerprint") != apply_group_links.catalog_control_group_links_fingerprint):
+                or active_plan.get("mapping_fingerprint") != fingerprint):
             raise ValueError("Use the selected write-disabled Catalog Preview.")
-        current_fingerprint = active_plan["mapping_fingerprint"]
         active_plan["mapping_fingerprint"] = base_fingerprint
         try:
             new_nodes, new_edges = base_apply(nodes, edges, source_df, active)
             base_result_fingerprint = active_plan["mapping_fingerprint"]
         finally:
-            active_plan["mapping_fingerprint"] = current_fingerprint
+            active_plan["mapping_fingerprint"] = fingerprint
         if not active["graph_report"].get("NATIVE_CATALOG_CONTROL_HIERARCHY"):
             raise ValueError("The Catalog hierarchy must run before the link mapping.")
         active["graph_report"]["NATIVE_CATALOG_CONTROL_GROUP_LINKS"] = _add_catalog_control_group_links(
@@ -159,7 +158,6 @@ def install_catalog_control_group_link_preview():
                 [base_result_fingerprint, fingerprint], separators=(",", ":"),
             ).encode()).hexdigest()
         active_plan["mapping_fingerprint"] = result_fingerprint
-        apply_group_links.catalog_control_group_links_fingerprint = result_fingerprint
         return new_nodes, new_edges
 
     apply_group_links.catalog_control_group_links_fingerprint = fingerprint
