@@ -2033,7 +2033,7 @@ def _metadata_finish(nodes, edges, context):
 
 
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping
@@ -2696,6 +2696,96 @@ def _catalog_hierarchy_members(raw, counts):
     return identifiers
 
 
+def _add_catalog_control_group_links(nodes, control_paths, target_paths, namespace):
+    """Use verified source references and actual OSCAL IDs in each Catalog."""
+    roots = Counter(node["SOURCE_RECORD_ID"] for node in nodes if node["ELEMENT_PATH"] == "catalog")
+    if any(count != 1 for count in roots.values()):
+        raise ValueError("Catalog roots do not have unique source identities.")
+
+    group_targets = defaultdict(list)
+    target_roots = defaultdict(set)
+    ids_by_root = defaultdict(Counter)
+    controls = []
+    for node in nodes:
+        path = node["ELEMENT_PATH"]
+        if path != "catalog" and not path.startswith("catalog."):
+            continue
+        root = node["SOURCE_RECORD_ID"]
+        if root not in roots:
+            raise ValueError("A Catalog node has no document root.")
+        payload = json.loads(node["METADATA_JSON"])
+        stack = [payload]
+        while stack:
+            item = stack.pop()
+            identifier = item.get("id")
+            if isinstance(identifier, str):
+                ids_by_root[root][identifier] += 1
+            stack.extend(item.get("parts", ()))
+        if path in control_paths:
+            controls.append((node, payload))
+        if path in target_paths:
+            kind, id_property = target_paths[path]
+            content_ids = [prop.get("value") for prop in payload.get("props", ())
+                           if prop.get("name") == id_property]
+            if len(content_ids) != 1:
+                raise ValueError("A Catalog target group lacks a unique source identity.")
+            identity = (kind, _source_id(content_ids[0]))
+            group_targets[(root, *identity)].append(payload.get("id"))
+            target_roots[identity].add(root)
+
+    outcomes = ("references", "added", "already_present", "unresolved_source", "outside_catalog",
+                "group_not_in_candidate", "ambiguous_or_invalid_group_id")
+    report = {kind: dict.fromkeys(outcomes, 0) for kind, _ in target_paths.values()}
+    for node, payload in controls:
+        references = [prop["value"] for prop in payload.get("props", ())
+                      if prop.get("name") == "authoritative-subsection-reference"
+                      and prop.get("ns") == namespace]
+        if not references:
+            continue
+        if len(references) != 1:
+            raise ValueError("A Catalog control has multiple Subsection reference properties.")
+
+        targets = {}
+        for subsection in json.loads(references[0]):
+            section = subsection.get("Section")
+            for kind, member in (("subsection", subsection), ("section", section)):
+                if member is None:
+                    continue
+                identity = (kind, _source_id(member["ContentId"]))
+                # The hierarchy property omits Name for targets without a resolved title.
+                targets[identity] = bool(member.get("Name")) or targets.get(identity, False)
+
+        root = node["SOURCE_RECORD_ID"]
+        links = payload.get("links", [])
+        existing = {(link.get("rel"), link.get("href")) for link in links}
+        additions = []
+        for (kind, content_id), resolved in sorted(targets.items()):
+            counts = report[kind]
+            counts["references"] += 1
+            candidates = group_targets.get((root, kind, content_id), ())
+            if not resolved:
+                counts["unresolved_source"] += 1
+            elif not candidates:
+                outcome = "outside_catalog" if (kind, content_id) in target_roots else "group_not_in_candidate"
+                counts[outcome] += 1
+            elif (len(candidates) != 1 or not _is_oscal_token(candidates[0])
+                  or ids_by_root[root][candidates[0]] != 1):
+                counts["ambiguous_or_invalid_group_id"] += 1
+            else:
+                href = "#" + quote(candidates[0], safe="-._~")
+                if ("related", href) in existing:
+                    counts["already_present"] += 1
+                    continue
+                additions.append({"rel": "related", "href": href})
+                existing.add(("related", href))
+                counts["added"] += 1
+        if additions:
+            payload["links"] = [*links, *additions]
+            node["METADATA_JSON"] = json.dumps(payload, sort_keys=True, ensure_ascii=False, allow_nan=False)
+    return report
+
+
+
 def _apply_native_catalog_control_hierarchy(nodes, edges, target_values, context, spec, snapshots):
     hierarchy = spec["control_hierarchy_reference"]
     field = hierarchy["source_field"]
@@ -2864,6 +2954,16 @@ def _apply_native_catalog_control_hierarchy(nodes, edges, target_values, context
         node["METADATA_JSON"] = json.dumps(payload, sort_keys=True, ensure_ascii=False, allow_nan=False)
     counts["distinct_missing_subsections"] = len(missing_subsection_ids)
     context["graph_report"]["NATIVE_CATALOG_CONTROL_HIERARCHY"] = {field: counts}
+    group_paths = {
+        lookup: path for path, lookup in spec["owner_bindings"].items()
+    }
+    target_paths = {
+        group_paths[lookup]: (kind, joined[lookup]["child_record_id_property"])
+        for kind, lookup in (("section", hierarchy["section_lookup"]),
+                             ("subsection", hierarchy["subsection_lookup"]))
+    }
+    context["graph_report"]["NATIVE_CATALOG_CONTROL_GROUP_LINKS"] = _add_catalog_control_group_links(
+        nodes, control_paths, target_paths, namespace)
     return nodes, edges
 
 
