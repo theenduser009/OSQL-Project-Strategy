@@ -1,11 +1,11 @@
-# Run after the Catalog reference or hierarchy Preview, then rerun only Cell 7 in PREVIEW.
-# If the field settings are empty, run once to see numbered choices from Archer metadata.
-# The existing reference and hierarchy work is reused in the same session.
+# Replace the entire Guidance cell with this file in the same Snowflake session.
+# Run this cell as-is, then rerun only Cell 7 in PREVIEW.
+# The row choices below match the 15-row menu for this preview.
 
 GUIDANCE_FIELDS = ()
 INSPECT_FIELDS = ()
-GUIDANCE_ROWS = ()
-INSPECT_ROWS = ()
+GUIDANCE_ROWS = (2, 4, 9, 10, 11, 14, 15)
+INSPECT_ROWS = (1, 3, 5, 12)
 
 from collections import Counter
 import hashlib
