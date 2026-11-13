@@ -131,7 +131,7 @@ def check_catalog_subsection_source():
     if any(levels[target] != {str(subsection_level)} for target in missing):
         raise ValueError("The missing targets do not all belong to the expected hierarchy level.")
 
-    raw = _input_table(session, subsection["source_table"])
+    raw = session.table(subsection["source_table"])
     raw_columns = _normalized_columns(raw.columns)
     raw_id = _input_column(raw_columns, subsection.get("content_id_column", "CONTENT_ID"))
     raw_doc = _input_column(raw_columns, subsection.get("json_column", "CURATED_JSON"))
