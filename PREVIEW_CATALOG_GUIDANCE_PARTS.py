@@ -1,14 +1,49 @@
-# Run after the Catalog reference helper and before running Cells 5–7 in PREVIEW.
-# Enter the exact source field keys to map as guidance or inspect in the same run.
-# Existing reference selections remain active in the same session.
+# Run after the Catalog reference or hierarchy Preview, then rerun only Cell 7 in PREVIEW.
+# If the field settings are empty, run once to see numbered choices from Archer metadata.
+# The existing reference and hierarchy work is reused in the same session.
 
 GUIDANCE_FIELDS = ()
 INSPECT_FIELDS = ()
+GUIDANCE_ROWS = ()
+INSPECT_ROWS = ()
 
 from collections import Counter
 import hashlib
 import json
 import re
+
+
+def _catalog_guidance_fields(context, native, guidance_fields, inspect_fields):
+    selected_rows = (*GUIDANCE_ROWS, *INSPECT_ROWS)
+    if guidance_fields:
+        if selected_rows:
+            raise ValueError("Choose field names or row numbers for the guidance preview.")
+        return guidance_fields, inspect_fields
+    if inspect_fields:
+        raise ValueError("Enter the guidance fields or choose guidance row numbers.")
+    lookup = SOURCE_INPUTS[context["source_key"]]["lookups_by_model"]["CATALOG"]
+    metadata = lookup["native_control_guid_metadata"][native["lookup"]]
+    keys = {
+        row["SQL_FIELD_NAME"] for row in metadata.to_local_iterator()
+        if row["LEVEL_ID"] == native["guid_props"]["level_id"]
+        and isinstance(row["SQL_FIELD_NAME"], str)
+        and re.fullmatch(r"[A-Z][A-Z0-9_]*", row["SQL_FIELD_NAME"])
+    }
+    terms = re.compile(r"GUIDANCE|GUIDELINES?|REQUIREMENTS?|DESCRIPTION|SUMMARY|STATEMENTS?|PARAMETERS?")
+    names = sorted(field for field in keys if terms.search(field)
+                   and field != native["fields"]["parts"])
+    if not names:
+        raise ValueError("Archer metadata returned no Catalog guidance or inspection candidates.")
+    if not selected_rows:
+        for index, field in enumerate(names, 1):
+            print(f"{index:>3}  {field}")
+        print("Enter the numbers in GUIDANCE_ROWS and INSPECT_ROWS, then rerun this cell.")
+        return (), ()
+    if (not GUIDANCE_ROWS or len(set(selected_rows)) != len(selected_rows)
+            or any(type(index) is not int or not 1 <= index <= len(names) for index in selected_rows)):
+        raise ValueError("Choose distinct numbers from the displayed list and include guidance rows.")
+    return (tuple(names[index - 1] for index in GUIDANCE_ROWS),
+            tuple(names[index - 1] for index in INSPECT_ROWS))
 
 
 def install_catalog_guidance_preview(guidance_fields, inspect_fields):
@@ -24,8 +59,9 @@ def install_catalog_guidance_preview(guidance_fields, inspect_fields):
         raise ValueError("Use the write-disabled native Catalog route.")
     if native.get("extra_parts"):
         raise ValueError("The installed Catalog mapping already defines additional Parts. Run its normal Preview.")
+    guidance_fields, inspect_fields = _catalog_guidance_fields(context, native, guidance_fields, inspect_fields)
     if not guidance_fields:
-        raise ValueError("Enter the guidance field keys in GUIDANCE_FIELDS at the top of this cell.")
+        return None
     fields = (*guidance_fields, *inspect_fields)
     if (len(set(fields)) != len(fields)
             or any(not isinstance(field, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", field)
@@ -43,9 +79,15 @@ def install_catalog_guidance_preview(guidance_fields, inspect_fields):
     if getattr(base_apply, "catalog_guidance_fingerprint", None) == base_fingerprint:
         base_fingerprint = base_apply.catalog_guidance_base_fingerprint
         base_apply = base_apply.catalog_guidance_base_apply
-    if not (getattr(base_apply, "catalog_reference_batch_base_apply", None)
+    reference_apply = base_apply
+    if getattr(base_apply, "catalog_hierarchy_fingerprint", None) == base_fingerprint:
+        reference_apply = base_apply.catalog_hierarchy_base_apply
+        if getattr(reference_apply, "catalog_guidance_base_apply", None):
+            print("Catalog guidance is already active under the hierarchy. Run Cell 7 in PREVIEW.")
+            return None
+    if not (getattr(reference_apply, "catalog_reference_batch_base_apply", None)
             or any(prop.get("transform") == "catalog-record-reference" for prop in native.get("extra_props", ()))):
-        raise ValueError("Run the Catalog reference helper first, then rerun this cell.")
+        raise ValueError("Use the same session as the Catalog reference or hierarchy Preview.")
 
     fingerprint = hashlib.sha256(json.dumps(
         [base_fingerprint, "catalog-guidance-preview-v1", guidance, inspections],
@@ -147,4 +189,4 @@ def install_catalog_guidance_preview(guidance_fields, inspect_fields):
 _catalog_guidance_preview = install_catalog_guidance_preview(GUIDANCE_FIELDS, INSPECT_FIELDS)
 if _catalog_guidance_preview is not None:
     _native_catalog_apply = _catalog_guidance_preview
-    print("Catalog guidance ready. Run Cells 5–7 in PREVIEW.")
+    print("Catalog guidance ready. Run Cell 7 in PREVIEW.")
